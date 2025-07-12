@@ -10,12 +10,12 @@ const leaveService = new LeaveRequestService();
  */
 router.post("/", async (req: any, res: any) => {
   try {
-    const request = await leaveService.createRequest({
+    const request = await leaveService.create({
       subject: req.body.subject,
       startDate: req.body.startDate,
       endDate: req.body.endDate,
-      createdById: req.body.createdById,
-    });
+      createdBy: req.body.createdById,
+    } as any, req.body.createdBy);
     res.status(201).json(request);
   } catch (err: any) {
     console.error(err);
