@@ -13,17 +13,13 @@ Each state is a step in the process (e.g., "DRAFT", "MANAGER_REVIEW"), and trans
 ### Basic Terms:
 Concept	Description
 
-State	A named step in a process (e.g., "DRAFT", "HR_REVIEW").
+- State	A named step in a process (e.g., "DRAFT", "HR_REVIEW").
+- Transition	A rule that describes movement from one state to another via an action.
+- Action	A trigger that causes a state transition (e.g., "submit", "approve").
+- Initial State	The starting point of the workflow.
+- Final State(s)	One or more states where no further transitions exist.
 
-Transition	A rule that describes movement from one state to another via an action.
-
-Action	A trigger that causes a state transition (e.g., "submit", "approve").
-
-Initial State	The starting point of the workflow.
-
-Final State(s)	One or more states where no further transitions exist.
-
-🔄 Visualization:
+Examples:
 This example from leave.json blueprint defines a state machine like this:
 
 css
