@@ -139,7 +139,9 @@ Type-safe with TypeScript
 ## Diagram of a State Machine (Visual Representation)
 
 [DRAFT] --submit--> [MANAGER_REVIEW] --approve--> [HR_REVIEW] --approve--> [COMPLETED]
+
         \                          \--reject--> [REJECTED]
+        
          \--reject--> [REJECTED]
 
 
@@ -201,9 +203,11 @@ After transition (e.g., send notification)
 You can plug these into the service for better separation of concerns. -->
 
 🧩 Future Features
+- Complete log history
 - Role-based access control
 - Side effects
-- Workflow visual builder (graph editor)
+- Cycles handling
+- Conditional logic per step/action
 - Notifications and escalations
 - Scheduled transitions
-- Conditional logic per step/action
+- Workflow visual builder (graph editor)
