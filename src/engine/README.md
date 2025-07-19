@@ -7,7 +7,7 @@ The Generic Workflow Engine powers request flows — such as leave requests, app
 Each state is a step in the process (e.g., "DRAFT", "MANAGER_REVIEW"), and transitions define how to move from one state to another using an action (e.g., "submit", "approve", "reject").
 
 ## Understanding the State Machine
-## Basic Terms:
+### Basic Terms:
 Concept	Description
 State	A named step in a process (e.g., "DRAFT", "HR_REVIEW").
 Transition	A rule that describes movement from one state to another via an action.
