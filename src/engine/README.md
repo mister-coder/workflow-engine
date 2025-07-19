@@ -138,9 +138,11 @@ Type-safe with TypeScript
 
 ## Diagram of a State Machine (Visual Representation)
 
-### [DRAFT] --submit--> [MANAGER_REVIEW] --approve--> [HR_REVIEW] --approve--> [COMPLETED]
-###        \                          \ --reject--> [REJECTED]        
-###         \ --reject--> [REJECTED]
+ [DRAFT] --submit--> [MANAGER_REVIEW] --approve--> [HR_REVIEW] --approve--> [COMPLETED]
+---
+        \                          \ --reject--> [REJECTED]        
+---
+         \ --reject--> [REJECTED]
 
 
 ## Components Overview
