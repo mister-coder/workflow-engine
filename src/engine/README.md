@@ -46,22 +46,36 @@ Using a state machine brings the following benefits:
 
 ## Folder Structure
 .
-├── blueprints/                # JSON files defining each workflow
-│   └── leave.json             # Example: leave request workflow
-├── src/
-│   ├── engine/                # Core state machine engine
-│   │   └── WorkflowEngine.ts
-│   ├── services/              # Workflow orchestration (e.g. transitions, history)
-│   ├── controllers/           # Express handlers
-│   ├── routes/                # API endpoints
-│   ├── models/                # TypeORM entities: Request, History, etc.
-│   ├── utils/                 # Utility functions (e.g., load blueprint)
-│   ├── app.ts                 # Express app setup
-│   └── server.ts              # App entry point
-├── workflow.types.ts          # Shared types/interfaces
-└── README.md
-🧱 Blueprint JSON Example
 
+├── blueprints/                # JSON files defining each workflow
+
+│   └── leave.json             # Example: leave request workflow
+
+├── src/
+
+│   ├── engine/                # Core state machine engine
+
+│   │   └── WorkflowEngine.ts
+
+│   ├── services/              # Workflow orchestration (e.g. transitions, history)
+
+│   ├── controllers/           # Express handlers
+
+│   ├── routes/                # API endpoints
+
+│   ├── models/                # TypeORM entities: Request, History, etc.
+
+│   ├── utils/                 # Utility functions (e.g., load blueprint)
+
+│   ├── app.ts                 # Express app setup
+
+│   └── server.ts              # App entry point
+
+├── workflow.types.ts          # Shared types/interfaces
+
+└── README.md
+
+## Blueprint JSON Example
 
  {
 
