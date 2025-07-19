@@ -188,7 +188,7 @@ Use this to add custom behavior per workflow.
 
 Done! You now have a full workflow engine for your entity.
 
-✅ Example Usage
+### Example Usage
 `
 const service = new LeaveRequestService();
 
