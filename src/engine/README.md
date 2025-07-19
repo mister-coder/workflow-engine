@@ -192,8 +192,7 @@ Done! You now have a full workflow engine for your entity.
 `
 const service = new LeaveRequestService();
 
-await service.transition(123, 'approve', currentUser);
-// Validates step, performs transition, saves history, runs side effects
+await service.transition(123, 'approve', currentUser);// Validates step, performs transition, saves history, runs side effects
 `
 <!-- 🔄 Side Effects
 Side effects can be registered and triggered:
