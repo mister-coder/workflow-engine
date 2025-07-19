@@ -42,7 +42,7 @@ export class WorkflowEngine {
    * @param workflowKey e.g. 'leave'
    */
   private loadWorkflowBlueprint(workflowKey: string): WorkflowDefinition {
-    const filePath = path.join(__dirname, "..", "workflows", `${workflowKey}.json`);
+    const filePath = path.join(__dirname, "..", "workflows", `${workflowKey}.workflow.json`);
     const raw = fs.readFileSync(filePath, "utf-8");
     return JSON.parse(raw);
   }
@@ -54,6 +54,12 @@ export class WorkflowEngine {
     return this.workflow.transitions.filter(
       t => t.fromStepKey === currentStepKey
     );
+  }
+
+  // Get initial step key
+  getInitialStepKey(): any | null 
+  {
+    return this.workflow.steps[0] ?? null;
   }
 
   /**

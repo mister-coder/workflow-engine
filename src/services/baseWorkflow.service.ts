@@ -28,11 +28,12 @@ export class GenericWorkflowService<T extends { id: number; currentStepKey: stri
    * Create a new request
    */
   async create(data: DeepPartial<T>, userId: number): Promise<T> {
+    const initialStepKey: any = this.engine.getInitialStepKey();
     const user = await this.userRepo.findOneByOrFail({ id: userId });
     const entity = this.entityRepo.create(data);
     (entity as any).createdBy = user;
-    entity.currentStepKey = "DRAFT";
-    entity.status = "pending";
+    entity.currentStepKey = initialStepKey?.key ?? "draft";
+    entity.status = initialStepKey?.name ?? "draft";
     return this.entityRepo.save(entity);
   }
 
