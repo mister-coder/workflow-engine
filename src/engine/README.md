@@ -62,23 +62,40 @@ Using a state machine brings the following benefits:
 └── README.md
 🧱 Blueprint JSON Example
 
-- {
--   "workflowKey": "leave",
--   "steps": [
--     { "key": "DRAFT", "name": "Draft" },
--     { "key": "MANAGER_REVIEW", "name": "Manager Review" },
--     { "key": "HR_REVIEW", "name": "HR Review" },
--     { "key": "COMPLETED", "name": "Completed" },
--     { "key": "REJECTED", "name": "Rejected" }
--   ],
--   "transitions": [
--     { "fromStepKey": "DRAFT", "toStepKey": "MANAGER_REVIEW", "action": "submit" },
--     { "fromStepKey": "MANAGER_REVIEW", "toStepKey": "HR_REVIEW", "action": "approve" },
--     { "fromStepKey": "HR_REVIEW", "toStepKey": "COMPLETED", "action": "approve" },
--     { "fromStepKey": "MANAGER_REVIEW", "toStepKey": "REJECTED", "action": "reject" },
--     { "fromStepKey": "HR_REVIEW", "toStepKey": "REJECTED", "action": "reject" }
--   ]
-- }
+
+ {
+
+   "workflowKey": "leave",
+
+   "steps": [
+
+     { "key": "DRAFT", "name": "Draft" },
+
+     { "key": "MANAGER_REVIEW", "name": "Manager Review" },
+
+     { "key": "HR_REVIEW", "name": "HR Review" },
+
+     { "key": "COMPLETED", "name": "Completed" },
+
+     { "key": "REJECTED", "name": "Rejected" }
+
+   ],
+
+   "transitions": [
+
+     { "fromStepKey": "DRAFT", "toStepKey": "MANAGER_REVIEW", "action": "submit" },
+
+     { "fromStepKey": "MANAGER_REVIEW", "toStepKey": "HR_REVIEW", "action": "approve" },
+
+     { "fromStepKey": "HR_REVIEW", "toStepKey": "COMPLETED", "action": "approve" },
+
+     { "fromStepKey": "MANAGER_REVIEW", "toStepKey": "REJECTED", "action": "reject" },
+
+     { "fromStepKey": "HR_REVIEW", "toStepKey": "REJECTED", "action": "reject" }
+
+   ]
+
+ }
 
 
 ## API Endpoints
