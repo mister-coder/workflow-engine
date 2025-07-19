@@ -1,6 +1,13 @@
 # Generic Workflow Engine (Node.js + JSON Blueprints)
 A lightweight, class-based state machine engine for handling customizable, multi-user approval workflows. All workflow logic is defined externally in JSON blueprints — making it highly portable, editable, and environment-agnostic.
+It supports:
 
+- Multiple workflows
+- Forward/backward transitions
+- Step-based actions
+- History tracking
+- Side effects
+- Extensibility
 
 ## What Is This?
 The Generic Workflow Engine powers request flows — such as leave requests, approvals, and any multi-step process — using a finite state machine.
@@ -13,11 +20,10 @@ Each state is a step in the process (e.g., "DRAFT", "MANAGER_REVIEW"), and trans
 ### Basic Terms:
 Concept	Description
 
-- State	A named step in a process (e.g., "DRAFT", "HR_REVIEW").
-- Transition	A rule that describes movement from one state to another via an action.
-- Action	A trigger that causes a state transition (e.g., "submit", "approve").
-- Initial State	The starting point of the workflow.
-- Final State(s)	One or more states where no further transitions exist.
+- States = steps (e.g., DRAFT, MANAGER_REVIEW)
+- Transitions = actions (e.g., submit, approve, reject)
+- Deterministic: each state/action combo leads to a unique next state
+- Validation: only defined transitions are allowed
 
 ### Example:
 This example from leave.json blueprint defines a state machine like this:
@@ -135,3 +141,69 @@ Type-safe with TypeScript
 [DRAFT] --submit--> [MANAGER_REVIEW] --approve--> [HR_REVIEW] --approve--> [COMPLETED]
         \                          \--reject--> [REJECTED]
          \--reject--> [REJECTED]
+
+
+## Components Overview
+### WorkflowEngine
+This is the core logic that reads a JSON blueprint and handles:
+
+- Getting valid actions from a current step
+- Getting the next step for a given action
+- Getting the initial step
+- Validation of transitions
+
+Use it when you want to manipulate workflows dynamically from JSON.
+
+### BaseWorkflowService
+This is a generic, reusable service class that handles:
+
+- Performing transitions (submit, approve, reject, etc.)
+- Tracking transition and field update history
+- Triggering side effects before/after actions
+- DRY logic that works across different workflow types
+- You subclass this when building services for specific workflows (e.g., LeaveRequest).
+
+### WorkflowService
+This is a concrete service that extends BaseService and plugs in the workflow blueprint, entity, and history logic for a specific use case like:
+
+`
+export class LeaveRequestService extends BaseService<LeaveRequest> {
+  constructor() {
+    super(LeaveRequest, leaveWorkflowBlueprint);
+  }
+}
+`
+
+Use this to add custom behavior per workflow.
+
+### How to Add a New Workflow
+- Create JSON blueprint in blueprints/
+- Create an Entity (e.g., LeaveRequest.ts)
+- Create a Service that extends BaseService
+- Add API routes (optional)
+
+Done! You now have a full workflow engine for your entity.
+
+✅ Example Usage
+`
+const service = new LeaveRequestService();
+
+await service.transition(123, 'approve', currentUser);
+// Validates step, performs transition, saves history, runs side effects
+`
+<!-- 🔄 Side Effects
+Side effects can be registered and triggered:
+
+Before transition (e.g., validate form)
+
+After transition (e.g., send notification)
+
+You can plug these into the service for better separation of concerns. -->
+
+🧩 Future Features
+- Role-based access control
+- Side effects
+- Workflow visual builder (graph editor)
+- Notifications and escalations
+- Scheduled transitions
+- Conditional logic per step/action
