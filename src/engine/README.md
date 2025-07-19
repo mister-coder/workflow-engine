@@ -1,13 +1,13 @@
 # Generic Workflow Engine (Node.js + JSON Blueprints)
-A lightweight, class-based state machine engine in Node.js for handling customizable, multi-user approval workflows. All workflow logic is defined externally in JSON blueprints — making it highly portable, editable, and environment-agnostic.
+A lightweight, class-based state machine engine for handling customizable, multi-user approval workflows. All workflow logic is defined externally in JSON blueprints — making it highly portable, editable, and environment-agnostic.
 
-🧩 What Is This?
+## What Is This?
 The Generic Workflow Engine powers request flows — such as leave requests, approvals, and any multi-step process — using a finite state machine.
 
 Each state is a step in the process (e.g., "DRAFT", "MANAGER_REVIEW"), and transitions define how to move from one state to another using an action (e.g., "submit", "approve", "reject").
 
-🧠 Understanding the State Machine
-📘 Basic Terms:
+## Understanding the State Machine
+## Basic Terms:
 Concept	Description
 State	A named step in a process (e.g., "DRAFT", "HR_REVIEW").
 Transition	A rule that describes movement from one state to another via an action.
