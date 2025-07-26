@@ -1,8 +1,9 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn } from "typeorm";
+import { LeaveRequest } from "./LeaveRequest";
 import { User } from "../User";
 
 @Entity()
-export class LeaveRequest {
+export class LeaveRequestSnapshot {
   @PrimaryGeneratedColumn()
   id: number;
 
@@ -15,6 +16,15 @@ export class LeaveRequest {
   @Column()
   endDate: string;
 
+  @ManyToOne(() => LeaveRequest)
+  request: LeaveRequest;
+
+  @Column()
+  currentStepKey: string;  // e.g. "MANAGER_REVIEW"
+
+  @Column()
+  status: string;          // pending, approved, rejected
+
   @ManyToOne(() => User)
   createdBy: User;
 
@@ -23,10 +33,4 @@ export class LeaveRequest {
 
   @CreateDateColumn()
   changedAt: Date;
-
-  @Column()
-  currentStepKey: string;  // e.g. "MANAGER_REVIEW"
-
-  @Column()
-  status: string;          // pending, approved, rejected
 }

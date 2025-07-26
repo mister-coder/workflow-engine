@@ -9,6 +9,7 @@ const leaveService = new LeaveRequestService();
  * Create a new leave request
  */
 router.post("/", async (req: any, res: any) => {
+  console.log('creaate')
   try {
     const request = await leaveService.create({
       subject: req.body.subject,
@@ -17,6 +18,25 @@ router.post("/", async (req: any, res: any) => {
       createdBy: req.body.createdById,
     } as any, req.body.createdBy);
     res.status(201).json(request);
+  } catch (err: any) {
+    console.error(err);
+    res.status(500).json({ message: err.message });
+  }
+});
+
+/**
+ * POST /leave
+ * Update leave request
+ */
+router.put("/:id", async (req: any, res: any) => {
+    console.log('update')
+  try {
+    const id = Number(req.params.id);
+    const userId = Number(req.body.createdById); // Replace with `req.user.id` if using auth
+    const data = req.body;
+
+    const updated = await leaveService.update(id, data, userId);
+    res.status(200).json(updated);
   } catch (err: any) {
     console.error(err);
     res.status(500).json({ message: err.message });

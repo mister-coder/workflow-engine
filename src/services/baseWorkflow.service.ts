@@ -7,21 +7,24 @@ export class GenericWorkflowService<T extends { id: number; currentStepKey: stri
   private engine: WorkflowEngine;
   private entityRepo: Repository<T>;
   private userRepo: Repository<User>;
-  private changeRepo: any;    // later make a proper type
+  private snapshotRepo: any;    // later make a proper type
   private historyRepo: any;   // later make a proper type
+  private foreignIdName: any;   // later make a proper type
 
   constructor(
     workflowKey: string,
     entityRepo: Repository<T>,
     userRepo: Repository<User>,
     historyRepo: any,
-    // changeRepo: any
+    snapshotRepo: any,
+    foreignIdName: string
   ) {
     this.engine = new WorkflowEngine(workflowKey);
     this.entityRepo = entityRepo;
     this.userRepo = userRepo;
     this.historyRepo = historyRepo;
-    // this.changeRepo = changeRepo;
+    this.snapshotRepo = snapshotRepo;
+    this.foreignIdName = foreignIdName;
   }
 
   /**
@@ -34,7 +37,35 @@ export class GenericWorkflowService<T extends { id: number; currentStepKey: stri
     (entity as any).createdBy = user;
     entity.currentStepKey = initialStepKey?.key ?? "draft";
     entity.status = initialStepKey?.name ?? "draft";
-    return this.entityRepo.save(entity);
+
+    // Save the record
+    const savedRequest = await this.entityRepo.save(entity);
+
+    // update the object to become appropriate for the snapshot 
+    // by removing the id and replacing it with the parent entity id
+    const {id, ...rest} = savedRequest;
+
+    const updatedSavedRequest = {
+        [this.foreignIdName]: savedRequest, ...rest
+    }
+
+    await this.createSnapshot(updatedSavedRequest, user);
+
+    return savedRequest;
+  }
+
+  /**
+   * Create a snapshot of the workflow state
+   */
+  protected async createSnapshot(data: Record<string, any>, takenBy: User) {
+    if (!this.snapshotRepo) return;
+
+    const snapshot = this.snapshotRepo.create({
+        ...data,
+        createdBy: takenBy
+    });
+
+    await this.snapshotRepo.save(snapshot);
   }
 
   /**
@@ -74,40 +105,37 @@ export class GenericWorkflowService<T extends { id: number; currentStepKey: stri
     await this.entityRepo.save(entity);
   }
 
-  /**
-   * Update fields on the entity and record changes
-   */
-  async update(id: number, updates: Partial<T>, performedById: number) {
-    const entity = await this.entityRepo.findOneOrFail({
-      where: { id } as any,
-      relations: ["createdBy"],
-    });
-
-    const user = await this.userRepo.findOneByOrFail({ id: performedById });
-
-    const changes = [];
-
-    for (const [field, newValue] of Object.entries(updates)) {
-      if (field in entity) {
-        const oldValue = (entity as any)[field];
-        if (oldValue !== newValue) {
-          changes.push({
-            request: entity,
-            field,
-            oldValue: oldValue?.toString() ?? null,
-            newValue: newValue?.toString() ?? null,
-            changedBy: user,
-          });
-          (entity as any)[field] = newValue;
-        }
-      }
-    }
-
-    await this.entityRepo.save(entity);
-
-    if (changes.length > 0) {
-      await this.changeRepo.save(changes);
-    }
+/**
+ * Update a request and save a snapshot of the changes
+ */
+async update(id: any, data: DeepPartial<T>, userId: number)//: Promise<T> 
+{
+    // Find the existing request
+    const existing = await this.entityRepo.findOneByOrFail({ id });
+  
+    // Find the user who is performing the update
+    const user = await this.userRepo.findOneByOrFail({ id: userId });
+  
+    // Merge the update into the existing request
+    const updatedEntity = this.entityRepo.merge(existing, data);
+  
+    // Update metadata
+    (updatedEntity as any).updatedBy = user;
+  
+    // Save the updated entity
+    const saved = await this.entityRepo.save(updatedEntity);
+  
+    // Prepare data for snapshot: use the foreign key and exclude the entity's own ID
+    const { id: entityId, ...rest } = saved;
+    const snapshotData = {
+      ...rest,
+      [this.foreignIdName]: entityId,
+    };
+  
+    // Create a snapshot of the update
+    await this.createSnapshot(snapshotData, user);
+  
+    return saved;
   }
 
   /**
@@ -122,7 +150,7 @@ export class GenericWorkflowService<T extends { id: number; currentStepKey: stri
    * List change history
    */
   async getChanges(id: number) {
-    return this.changeRepo.find({
+    return this.snapshotRepo.find({
       where: { request: { id } },
       relations: ["changedBy"],
       order: { changedAt: "ASC" },
