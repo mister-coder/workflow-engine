@@ -31,27 +31,29 @@ export class GenericWorkflowService<T extends { id: number; currentStepKey: stri
    * Create a new request
    */
   async create(data: DeepPartial<T>, userId: number): Promise<T> {
-    const initialStepKey: any = this.engine.getInitialStepKey();
-    const user = await this.userRepo.findOneByOrFail({ id: userId });
-    const entity = this.entityRepo.create(data);
-    (entity as any).createdBy = user;
-    entity.currentStepKey = initialStepKey?.key ?? "draft";
-    entity.status = initialStepKey?.name ?? "draft";
+    return this.entityRepo.manager.transaction(async (manager) => {
+      const initialStepKey: any = this.engine.getInitialStepKey();
+      const user = await this.userRepo.findOneByOrFail({ id: userId });
+      const entity = this.entityRepo.create(data);
+      (entity as any).createdBy = user;
+      entity.currentStepKey = initialStepKey?.key ?? "draft";
+      entity.status = initialStepKey?.name ?? "draft";
 
-    // Save the record
-    const savedRequest = await this.entityRepo.save(entity);
+      // Save the record
+      const savedRequest = await this.entityRepo.save(entity);
 
-    // update the object to become appropriate for the snapshot 
-    // by removing the id and replacing it with the parent entity id
-    const {id, ...rest} = savedRequest;
+      // update the object to become appropriate for the snapshot 
+      // by removing the id and replacing it with the parent entity id
+      const {id, ...rest} = savedRequest;
 
-    const updatedSavedRequest = {
-        [this.foreignIdName]: savedRequest, ...rest
-    }
+      const updatedSavedRequest = {
+          [this.foreignIdName]: savedRequest, ...rest
+      }
 
-    await this.createSnapshot(updatedSavedRequest, user);
+      await this.createSnapshot(updatedSavedRequest, user);
 
-    return savedRequest;
+      return savedRequest;
+    });
   }
 
   /**
@@ -108,34 +110,35 @@ export class GenericWorkflowService<T extends { id: number; currentStepKey: stri
 /**
  * Update a request and save a snapshot of the changes
  */
-async update(id: any, data: DeepPartial<T>, userId: number)//: Promise<T> 
-{
-    // Find the existing request
-    const existing = await this.entityRepo.findOneByOrFail({ id });
-  
-    // Find the user who is performing the update
-    const user = await this.userRepo.findOneByOrFail({ id: userId });
-  
-    // Merge the update into the existing request
-    const updatedEntity = this.entityRepo.merge(existing, data);
-  
-    // Update metadata
-    (updatedEntity as any).updatedBy = user;
-  
-    // Save the updated entity
-    const saved = await this.entityRepo.save(updatedEntity);
-  
-    // Prepare data for snapshot: use the foreign key and exclude the entity's own ID
-    const { id: entityId, ...rest } = saved;
-    const snapshotData = {
-      ...rest,
-      [this.foreignIdName]: entityId,
-    };
-  
-    // Create a snapshot of the update
-    await this.createSnapshot(snapshotData, user);
-  
-    return saved;
+async update(id: any, data: DeepPartial<T>, userId: number)/*: Promise<T> */{
+    return this.entityRepo.manager.transaction(async (manager) => {
+      // Find the existing request
+      const existing = await this.entityRepo.findOneByOrFail({ id });
+    
+      // Find the user who is performing the update
+      const user = await this.userRepo.findOneByOrFail({ id: userId });
+    
+      // Merge the update into the existing request
+      const updatedEntity = this.entityRepo.merge(existing, data);
+    
+      // Update metadata
+      (updatedEntity as any).updatedBy = user;
+    
+      // Save the updated entity
+      const saved = await this.entityRepo.save(updatedEntity);
+    
+      // Prepare data for snapshot: use the foreign key and exclude the entity's own ID
+      const { id: entityId, ...rest } = saved;
+      const snapshotData = {
+        ...rest,
+        [this.foreignIdName]: entityId,
+      };
+    
+      // Create a snapshot of the update
+      await this.createSnapshot(snapshotData, user);
+    
+      return saved;
+    });
   }
 
   /**
