@@ -303,4 +303,54 @@ async update(id: any, data: DeepPartial<T>, userId: number)/*: Promise<T> */{
       order: { changedAt: "ASC" },
     });
   }
+
+  /**
+   * Get alias for child table in queries
+   */
+  private getChildAlias(cfg: any) {
+    return cfg.repo.metadata.tableName; // simple, clean alias
+  }
+
+  /**
+   * 
+   * Get many requests with active children joined
+   */
+  async getMany(filter: Record<string, any> = {}) {
+    const qb = this.entityRepo
+      .createQueryBuilder("parent")
+      .where(filter);
+
+    // JOIN all child tables
+    for (const cfg of this.childConfigs) {
+      const alias = this.getChildAlias(cfg);
+
+      qb.leftJoinAndSelect(
+        `${cfg.repo.metadata.tableName}`,      // child table
+        alias,                                // alias
+        `${alias}.${this.foreignIdName} = parent.id AND ${alias}.isActive = true`
+      );
+    }
+    return qb.getMany();
+  }
+
+  /**
+   * Get one request with active children joined
+   */
+  async getOne(filter: Record<string, any>) {
+    const qb = this.entityRepo
+      .createQueryBuilder("parent")
+      .where(filter);
+
+    // JOIN all child tables
+    for (const cfg of this.childConfigs) {
+      const alias = this.getChildAlias(cfg);
+
+      qb.leftJoinAndSelect(
+        `${cfg.repo.metadata.tableName}`,
+        alias,
+        `${alias}.${this.foreignIdName} = parent.id AND ${alias}.isActive = true`
+      );
+    }
+    return qb.getOne();
+  }
 }

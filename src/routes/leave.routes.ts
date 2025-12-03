@@ -63,6 +63,36 @@ router.post("/:id/action", async (req: any, res: any) => {
 });
 
 /**
+ * GET /leave/getmany
+ * Get many leave requests
+ */
+router.get("/getmany", async (req: any, res: any) => {
+  try {
+    const data = await leaveService.getMany({});
+    res.status(200).json({ data });
+  } catch (err: any) {
+    console.error(err);
+    res.status(400).json({ message: err.message });
+  }
+});
+
+/**
+ * GET /leave/getone
+ * Get one leave requests
+ */
+router.get("/getone", async (req: any, res: any) => {
+  try {
+    const data = await leaveService.getOne({
+      id: 107
+    });
+    res.status(200).json({ data });
+  } catch (err: any) {
+    console.error(err);
+    res.status(400).json({ message: err.message });
+  }
+});
+
+/**
  * GET /leave/:id/actions
  * List all available actions for a leave request
  */

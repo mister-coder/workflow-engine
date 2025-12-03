@@ -9,9 +9,9 @@ export class ChildSnapshot {
   @Column()
   data: string;
 
+  // versioning fields in many to one relationship
   @Column({  nullable: true })
   version: number;
-
   @Column({  nullable: true })
   isActive: boolean;
 
