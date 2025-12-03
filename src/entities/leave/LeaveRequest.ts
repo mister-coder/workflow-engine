@@ -1,5 +1,7 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn } from "typeorm";
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn, OneToMany } from "typeorm";
 import { User } from "../User";
+import { Child } from "./child";
+import { SecondChild } from "./secondChild";
 
 @Entity()
 export class LeaveRequest {
@@ -29,4 +31,10 @@ export class LeaveRequest {
 
   @Column()
   status: string;          // pending, approved, rejected
+
+  @OneToMany(() => Child, child => child.request) 
+  children: Child[];
+
+  @OneToMany(() => SecondChild, secondChild => secondChild.request) 
+  secondChildren: SecondChild[];
 }

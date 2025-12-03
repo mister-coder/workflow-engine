@@ -11,13 +11,24 @@ export class GenericWorkflowService<T extends { id: number; currentStepKey: stri
   private historyRepo: any;   // later make a proper type
   private foreignIdName: any;   // later make a proper type
 
+  private childConfigs: {
+    repo: Repository<any>;
+    snapshotRepo: Repository<any>;
+    foreignKey: string;
+  }[];
+
   constructor(
     workflowKey: string,
     entityRepo: Repository<T>,
     userRepo: Repository<User>,
     historyRepo: any,
     snapshotRepo: any,
-    foreignIdName: string
+    foreignIdName: string,
+    childConfigs: {
+      repo: Repository<any>;
+      snapshotRepo: Repository<any>;
+      foreignKey: string;
+    }[] = []
   ) {
     this.engine = new WorkflowEngine(workflowKey);
     this.entityRepo = entityRepo;
@@ -25,6 +36,7 @@ export class GenericWorkflowService<T extends { id: number; currentStepKey: stri
     this.historyRepo = historyRepo;
     this.snapshotRepo = snapshotRepo;
     this.foreignIdName = foreignIdName;
+    this.childConfigs = childConfigs;
   }
 
   /**
@@ -33,11 +45,16 @@ export class GenericWorkflowService<T extends { id: number; currentStepKey: stri
   async create(data: DeepPartial<T>, userId: number): Promise<T> {
     return this.entityRepo.manager.transaction(async (manager) => {
       const initialStepKey: any = this.engine.getInitialStepKey();
-      const user = await this.userRepo.findOneByOrFail({ id: userId });
-      const entity = this.entityRepo.create(data);
+      const user = await manager.findOneByOrFail(User, { id: userId });
+      const entity = manager.create(this.entityRepo.target, data);
       (entity as any).createdBy = user;
       entity.currentStepKey = initialStepKey?.key ?? "draft";
       entity.status = initialStepKey?.name ?? "draft";
+
+      // Extract children
+      const extractedChildren = this.extractChildren(data);
+
+      console.log({data, extractedChildren});
 
       // Save the record
       const savedRequest = await this.entityRepo.save(entity);
@@ -51,6 +68,8 @@ export class GenericWorkflowService<T extends { id: number; currentStepKey: stri
       }
 
       await this.createSnapshot(updatedSavedRequest, user);
+      
+      await this.saveChildren(manager, savedRequest.id, extractedChildren);
 
       return savedRequest;
     });
@@ -68,6 +87,77 @@ export class GenericWorkflowService<T extends { id: number; currentStepKey: stri
     });
 
     await this.snapshotRepo.save(snapshot);
+  }
+  
+  /**
+   * Extract child table data from the main data object
+   */
+  private extractChildren(data: any) {
+    const result: Record<string, any[]> = {};
+
+    this.childConfigs.forEach((cfg) => {
+      let name = cfg.repo.metadata.tableName;
+
+      // Convert snake case to camelCase if needed
+      name = name.replace(/([-_][a-z])/g, (group) => {
+        return group.toUpperCase()
+        .replace('-', '')
+        .replace('_', '');
+      });
+
+      if (Array.isArray(data[name])) {
+        result[name] = data[name];
+        delete data[name];
+      } else {
+        result[name] = [data[name]];
+      }
+    });
+
+    return result;
+  }
+  
+  /**
+   * Save child table records
+   */
+  private async saveChildren(manager: any, parentId: number, extracted: any) {
+    console.log('cfg...', this.childConfigs);
+    for (const cfg of this.childConfigs) {
+      console.log('tt cfg...', cfg.repo.metadata.tableName);
+      let table = cfg.repo.metadata.tableName;
+
+      // Convert snake case to camelCase if needed
+      table = table.replace(/([-_][a-z])/g, (group) => {
+        return group.toUpperCase()
+        .replace('-', '')
+        .replace('_', '');
+      });
+
+      const rows = extracted[table];
+      
+      if (!rows || rows.length === 0) continue;
+
+      // Map each child row to include foreign key to parent
+      const mapped = rows.map((child: any) => ({
+        ...child,
+        [this?.foreignIdName]: parentId,
+      }));
+      console.log('Saving children for table:', {table, mapped, rows, extracted});
+
+      console.log('cfg.repo.target', table, cfg.repo.target, {mapped});
+      // Save child records
+      const savedChild = await manager.save(cfg.repo.target, mapped);
+
+      console.log('Saved child records:', savedChild, cfg.foreignKey);
+      // Save snapshots for each child along with foreign key to parent
+
+      savedChild.forEach(async (child: any) => {
+        console.log('Saving child snapshot for child:', {child, cfg: cfg.foreignKey});
+        await manager.save(cfg.snapshotRepo.target, {
+          ...child,
+          [cfg.foreignKey]: child.id,
+        });
+      })
+    }
   }
 
   /**

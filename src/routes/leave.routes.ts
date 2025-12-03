@@ -16,6 +16,8 @@ router.post("/", async (req: any, res: any) => {
       startDate: req.body.startDate,
       endDate: req.body.endDate,
       createdBy: req.body.createdById,
+      child: req.body.child,
+      secondChild: req.body.secondChild,
     } as any, req.body.createdBy);
     res.status(201).json(request);
   } catch (err: any) {
