@@ -9,6 +9,12 @@ export class ChildSnapshot {
   @Column()
   data: string;
 
+  @Column({  nullable: true })
+  version: number;
+
+  @Column({  nullable: true })
+  isActive: boolean;
+
   @Column()
   request: string;
 

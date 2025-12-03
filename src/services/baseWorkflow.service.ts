@@ -54,8 +54,6 @@ export class GenericWorkflowService<T extends { id: number; currentStepKey: stri
       // Extract children
       const extractedChildren = this.extractChildren(data);
 
-      console.log({data, extractedChildren});
-
       // Save the record
       const savedRequest = await this.entityRepo.save(entity);
 
@@ -120,9 +118,7 @@ export class GenericWorkflowService<T extends { id: number; currentStepKey: stri
    * Save child table records
    */
   private async saveChildren(manager: any, parentId: number, extracted: any) {
-    console.log('cfg...', this.childConfigs);
     for (const cfg of this.childConfigs) {
-      console.log('tt cfg...', cfg.repo.metadata.tableName);
       let table = cfg.repo.metadata.tableName;
 
       // Convert snake case to camelCase if needed
@@ -141,17 +137,70 @@ export class GenericWorkflowService<T extends { id: number; currentStepKey: stri
         ...child,
         [this?.foreignIdName]: parentId,
       }));
-      console.log('Saving children for table:', {table, mapped, rows, extracted});
 
-      console.log('cfg.repo.target', table, cfg.repo.target, {mapped});
       // Save child records
       const savedChild = await manager.save(cfg.repo.target, mapped);
 
-      console.log('Saved child records:', savedChild, cfg.foreignKey);
       // Save snapshots for each child along with foreign key to parent
 
       savedChild.forEach(async (child: any) => {
-        console.log('Saving child snapshot for child:', {child, cfg: cfg.foreignKey});
+        await manager.save(cfg.snapshotRepo.target, {
+          ...child,
+          [cfg.foreignKey]: child.id,
+        });
+      })
+    }
+  }
+  
+  /**
+   * Update child table records
+   */
+  private async updateChildren(manager: any, parentId: number, extracted: any) {
+    for (const cfg of this.childConfigs) {
+      let table = cfg.repo.metadata.tableName;
+
+      // Determine the next version
+      const previousMax = await manager
+        .getRepository(cfg.repo.target)
+        .createQueryBuilder("child")
+        .where(`child.${this.foreignIdName} = :pid`, { pid: parentId })
+        .select("MAX(child.version)", "max")
+        .getRawOne();
+
+      // Mark all existing children inactive
+      await manager.update(
+        cfg.repo.target,
+        { [this.foreignIdName]: parentId },
+        { isActive: false }
+      );
+
+      const nextVersion = (previousMax?.max || 0) + 1;
+
+      // Convert snake case to camelCase if needed
+      table = table.replace(/([-_][a-z])/g, (group) => {
+        return group.toUpperCase()
+        .replace('-', '')
+        .replace('_', '');
+      });
+
+      const rows = extracted[table];
+      
+      if (!rows || rows.length === 0) continue;
+
+      // Map each child row to include foreign key to parent
+      const mapped = rows.map((child: any) => ({
+        ...child,
+        [this?.foreignIdName]: parentId,
+        version: nextVersion,
+        isActive: true,
+      }));
+
+      // Save child records
+      const savedChild = await manager.save(cfg.repo.target, mapped);
+
+      // Save snapshots for each child along with foreign key to parent
+
+      savedChild.forEach(async (child: any) => {
         await manager.save(cfg.snapshotRepo.target, {
           ...child,
           [cfg.foreignKey]: child.id,
@@ -226,6 +275,11 @@ async update(id: any, data: DeepPartial<T>, userId: number)/*: Promise<T> */{
     
       // Create a snapshot of the update
       await this.createSnapshot(snapshotData, user);
+
+      // Extract children
+      const extractedChildren = this.extractChildren(data);
+      
+      await this.updateChildren(manager, saved?.id, extractedChildren);
     
       return saved;
     });
