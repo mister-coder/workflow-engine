@@ -16,6 +16,7 @@ export interface WorkflowTransition {
   fromStepKey: string;
   toStepKey: string;
   action: string;
+  status?: string;
 }
 
 /**
@@ -71,6 +72,16 @@ export class WorkflowEngine {
       t => t.fromStepKey === currentStepKey && t.action === action
     );
     return transition?.toStepKey ?? null;
+  }
+
+  /**
+   * 
+   * Determine the transition status for a given action
+   */
+  getTransition(fromStepKey: string, action: string) {
+    return this.workflow.transitions.find(
+      t => t.fromStepKey === fromStepKey && t.action === action
+    );
   }
 
   /**

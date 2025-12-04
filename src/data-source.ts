@@ -7,6 +7,7 @@ import { SecondChild } from "./entities/leave/secondChild";
 import { SecondChildSnapshot } from "./entities/leave/secondChildSnapshot";
 import { LeaveRequest } from "./entities/leave/LeaveRequest";
 import { LeaveRequestSnapshot } from "./entities/leave/LeaveRequestSnapshot";
+import { LeaveHistory } from "./entities/leave/LeaveHistory";
 
 export const AppDataSource = new DataSource({
   type: "postgres",
@@ -17,7 +18,7 @@ export const AppDataSource = new DataSource({
   database: "workflow_engine_1",
   synchronize: true,
   logging: true,
-  entities: [Child, ChildSnapshot, LeaveRequest, User, LeaveRequestSnapshot, SecondChild, SecondChildSnapshot],
+  entities: [Child, ChildSnapshot, LeaveRequest, User, LeaveRequestSnapshot, SecondChild, SecondChildSnapshot, LeaveHistory],
   // entities: [__dirname + "/entities/leave/*.ts"],
   migrations: [__dirname + "/migrations/**/*.ts"],
   subscribers: [],

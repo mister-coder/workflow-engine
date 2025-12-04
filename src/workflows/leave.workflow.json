@@ -8,10 +8,10 @@
       { "key": "REJECTED", "name": "Rejected" }
     ],
     "transitions": [
-      { "fromStepKey": "DRAFT", "toStepKey": "MANAGER_REVIEW", "action": "submit" },
+      { "fromStepKey": "DRAFT", "toStepKey": "MANAGER_REVIEW", "action": "submit", "status": "submitted" },
       { "fromStepKey": "MANAGER_REVIEW", "toStepKey": "HR_REVIEW", "action": "approve" },
-      { "fromStepKey": "HR_REVIEW", "toStepKey": "COMPLETED", "action": "approve" },
-      { "fromStepKey": "MANAGER_REVIEW", "toStepKey": "REJECTED", "action": "reject" },
+      { "fromStepKey": "HR_REVIEW", "toStepKey": "COMPLETED", "action": "approve", "status": "approved by HR" },
+      { "fromStepKey": "MANAGER_REVIEW", "toStepKey": "REJECTED", "action": "reject", "status": "rejected by HR" },
       { "fromStepKey": "HR_REVIEW", "toStepKey": "REJECTED", "action": "reject" }
     ]
   }

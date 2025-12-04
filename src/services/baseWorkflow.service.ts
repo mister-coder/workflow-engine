@@ -218,10 +218,17 @@ export class GenericWorkflowService<T extends { id: number; currentStepKey: stri
       relations: ["createdBy"],
     });
 
-    const nextStepKey = this.engine.getNextStepKey(entity.currentStepKey, action);
-    if (!nextStepKey) {
+    // const nextStepKey = this.engine.getNextStepKey(entity.currentStepKey, action);
+    // if (!nextStepKey) {
+    //   throw new Error(`Invalid action "${action}" from step "${entity.currentStepKey}".`);
+    // }
+
+    const transition = this.engine.getTransition(entity.currentStepKey, action);
+    if (!transition) {
       throw new Error(`Invalid action "${action}" from step "${entity.currentStepKey}".`);
     }
+
+    const nextStepKey = transition.toStepKey;
 
     const user = await this.userRepo.findOneByOrFail({ id: performedById });
 
@@ -241,7 +248,7 @@ export class GenericWorkflowService<T extends { id: number; currentStepKey: stri
     entity.status =
       nextStepKey === "COMPLETED" ? "approved" :
       nextStepKey === "REJECTED" ? "rejected" :
-      "pending";
+      transition?.status ?? "pending";  // take status from transition if available in workflow definition
 
     await this.entityRepo.save(entity);
   }
