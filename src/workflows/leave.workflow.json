@@ -1,7 +1,7 @@
 {
     "workflowKey": "leave",
     "steps": [
-      { "key": "DRAFT", "name": "Draft" },
+      { "key": "DRAFT", "name": "Draft","permissions": { "view": ["Employee", "Manager"], "create": ["Employee"], "update": ["Employee"] } },
       { "key": "MANAGER_REVIEW", "name": "Manager Review" },
       { "key": "HR_REVIEW", "name": "HR Review" },
       { "key": "COMPLETED", "name": "Completed" },

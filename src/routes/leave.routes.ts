@@ -100,8 +100,11 @@ router.get("/getmany", async (req: any, res: any) => {
 router.get("/getone", async (req: any, res: any) => {
   try {
     const data = await leaveService.getOne({
-      id: 107
+      id: 100
     });
+    const role = 'Employee';
+    const action = 'view';
+    const permission = data?.currentStepKey ? await leaveService.validateStepPermission(data.currentStepKey, role, action) : {};
     res.status(200).json({ data });
   } catch (err: any) {
     console.error(err);

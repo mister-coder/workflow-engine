@@ -387,4 +387,24 @@ async update(id: any, data: DeepPartial<T>, userId: number)/*: Promise<T> */{
     }
     return qb.getOne();
   }
+
+  async getPermission(key: string) {
+    const step = this.engine.getStep(key);
+    return step?.permissions || {};
+  }
+
+  async validateStepPermission(stepKey: string, user: string, action: "view" | "create" | "update") {
+    const step = this.engine.getStep(stepKey);
+    if (!step) throw new Error(`Step not found: ${stepKey}`);
+
+    const perms = step.permissions?.[action];
+    if (!perms || perms.length === 0) return; // No restrictions => allow
+
+    if (perms.includes(user)) 
+      return true;
+    else
+      return false;
+      // throw new Error(`User role "${user}" is not allowed to ${action} at step "${stepKey}"`);
+    
+  }
 }

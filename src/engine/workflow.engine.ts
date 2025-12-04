@@ -7,6 +7,13 @@ import * as path from "path";
 export interface WorkflowStep {
   key: string;      // Unique code for the step (e.g. DRAFT)
   name: string;     // Human-readable name
+  
+  // OPTIONAL PERMISSIONS:
+  permissions?: {
+    view?: string[];    // roles allowed to VIEW
+    create?: string[];  // roles allowed to CREATE
+    update?: string[];  // roles allowed to UPDATE
+  };
 }
 
 /**
@@ -90,4 +97,12 @@ export class WorkflowEngine {
   getStepName(stepKey: string): string {
     return this.workflow.steps.find(s => s.key === stepKey)?.name || stepKey;
   }
+
+  /**
+   * Get step details by key
+   */
+  getStep(stepKey: string): WorkflowStep | undefined {
+    return this.workflow.steps.find(s => s.key === stepKey);
+  }
+
 }
