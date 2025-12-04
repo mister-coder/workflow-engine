@@ -63,6 +63,23 @@ router.post("/:id/action", async (req: any, res: any) => {
 });
 
 /**
+ * POST /leave/actions
+ * Perform bulk actions (e.g. submit, approve, reject) on multiple leave request
+ */
+router.post("/actions", async (req: any, res: any) => {
+  // const id = parseInt(req.params.id, 10);
+  const { action, performedById, comment, ids } = req.body;
+
+  try {
+    const result = await leaveService.performAction(ids, action, performedById, comment);
+    res.status(200).json(result);
+  } catch (err: any) {
+    console.error(err);
+    res.status(400).json({ message: err.message });
+  }
+});
+
+/**
  * GET /leave/getmany
  * Get many leave requests
  */

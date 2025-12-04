@@ -212,45 +212,72 @@ export class GenericWorkflowService<T extends { id: number; currentStepKey: stri
   /**
    * Perform an action on a workflow entity
    */
-  async performAction(id: number, action: string, performedById: number, comment?: string) {
-    const entity = await this.entityRepo.findOneOrFail({
-      where: { id } as any,
-      relations: ["createdBy"],
-    });
+  async performAction(id: number | number[], action: string, performedById: number, comment?: string) {
+    // Normalize to array
+    const idArray = Array.isArray(id) ? id : [id];
 
-    // const nextStepKey = this.engine.getNextStepKey(entity.currentStepKey, action);
-    // if (!nextStepKey) {
-    //   throw new Error(`Invalid action "${action}" from step "${entity.currentStepKey}".`);
-    // }
-
-    const transition = this.engine.getTransition(entity.currentStepKey, action);
-    if (!transition) {
-      throw new Error(`Invalid action "${action}" from step "${entity.currentStepKey}".`);
+    if (idArray.length === 0) {
+      throw new Error("No record ids provided.");
     }
 
-    const nextStepKey = transition.toStepKey;
-
     const user = await this.userRepo.findOneByOrFail({ id: performedById });
+    
+    const results: {
+      id: number;
+      success: boolean;
+      error?: string;
+    }[] = [];
+    
+    await this.entityRepo.manager.transaction(async (manager) => {
+      for (const id of idArray) {
+        try {
 
-    // Save transition history
-    const historyRecord = this.historyRepo.create({
-      request: entity,
-      fromStepKey: entity.currentStepKey,
-      toStepKey: nextStepKey,
-      action,
-      performedBy: user,
-      comment,
+          const entity = await manager.findOneOrFail(this.entityRepo.target, {
+            where: { id } as any,
+            relations: ["createdBy"],
+          });
+
+          // const nextStepKey = this.engine.getNextStepKey(entity.currentStepKey, action);
+          // if (!nextStepKey) {
+          //   throw new Error(`Invalid action "${action}" from step "${entity.currentStepKey}".`);
+          // }
+
+          const transition = this.engine.getTransition(entity.currentStepKey, action);
+          if (!transition) {
+            throw new Error(`Invalid action "${action}" from step "${entity.currentStepKey}".`);
+          }
+
+          const nextStepKey = transition.toStepKey;
+
+          // Save transition history
+          const historyRecord = manager.create(this.historyRepo.target, {
+            request: entity,
+            fromStepKey: entity.currentStepKey,
+            toStepKey: nextStepKey,
+            action,
+            performedBy: user,
+            comment,
+          });
+          await manager.save(this.historyRepo.target, historyRecord);
+
+          // Update entity
+          entity.currentStepKey = nextStepKey;
+          entity.status =
+            nextStepKey === "COMPLETED" ? "approved" :
+            nextStepKey === "REJECTED" ? "rejected" :
+            transition?.status ?? "pending";  // take status from transition if available in workflow definition
+
+          await manager.save(entity);
+          
+          results.push({ id, success: true });
+        } catch (err: any) {
+          results.push({ id, success: false, error: err.message });
+        }
+      }
     });
-    await this.historyRepo.save(historyRecord);
 
-    // Update entity
-    entity.currentStepKey = nextStepKey;
-    entity.status =
-      nextStepKey === "COMPLETED" ? "approved" :
-      nextStepKey === "REJECTED" ? "rejected" :
-      transition?.status ?? "pending";  // take status from transition if available in workflow definition
-
-    await this.entityRepo.save(entity);
+    // If called with a single ID, return a single result object instead of an array
+    return Array.isArray(id) ? results : results[0];
   }
 
 /**
