@@ -100,7 +100,18 @@ router.get("/getmany", async (req: any, res: any) => {
 router.get("/getone", async (req: any, res: any) => {
   try {
     const data = await leaveService.getOne({
-      id: 100
+      id: 107,
+      children: {
+        isActive: true,
+        subChild: {
+          // isActive: false
+          // id: (2 || null)
+          // id: { $or: [ 1, null ] }
+        }
+      },
+      secondChildren: {
+        isActive: true
+      }
     });
     const role = 'Employee';
     const action = 'view';

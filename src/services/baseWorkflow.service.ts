@@ -1,7 +1,15 @@
-import { Repository } from "typeorm";
+import { Repository, SelectQueryBuilder } from "typeorm";
 import { WorkflowEngine } from "../engine/workflow.engine";
 import { User } from "../entities/User";
 import { DeepPartial } from "typeorm";
+
+export interface ChildConfig {
+  repo: Repository<any>;
+  snapshotRepo: Repository<any>;
+  foreignKey: string;
+  relation: string;
+  children?: ChildConfig[];   // recursion works here
+}
 
 export class GenericWorkflowService<T extends { id: number; currentStepKey: string; status: string }> {
   private engine: WorkflowEngine;
@@ -11,11 +19,8 @@ export class GenericWorkflowService<T extends { id: number; currentStepKey: stri
   private historyRepo: any;   // later make a proper type
   private foreignIdName: any;   // later make a proper type
 
-  private childConfigs: {
-    repo: Repository<any>;
-    snapshotRepo: Repository<any>;
-    foreignKey: string;
-  }[];
+  private childConfigs: ChildConfig[];
+
 
   constructor(
     workflowKey: string,
@@ -24,11 +29,7 @@ export class GenericWorkflowService<T extends { id: number; currentStepKey: stri
     historyRepo: any,
     snapshotRepo: any,
     foreignIdName: string,
-    childConfigs: {
-      repo: Repository<any>;
-      snapshotRepo: Repository<any>;
-      foreignKey: string;
-    }[] = []
+    childConfigs: ChildConfig[] = []
   ) {
     this.engine = new WorkflowEngine(workflowKey);
     this.entityRepo = entityRepo;
@@ -352,18 +353,12 @@ async update(id: any, data: DeepPartial<T>, userId: number)/*: Promise<T> */{
   async getMany(filter: Record<string, any> = {}) {
     const qb = this.entityRepo
       .createQueryBuilder("parent")
-      .where(filter);
+      // .where(filter);
 
-    // JOIN all child tables
-    for (const cfg of this.childConfigs) {
-      const alias = this.getChildAlias(cfg);
+    this.joinChildren(this.childConfigs, qb, "parent");
 
-      qb.leftJoinAndSelect(
-        `${cfg.repo.metadata.tableName}`,      // child table
-        alias,                                // alias
-        `${alias}.${this.foreignIdName} = parent.id AND ${alias}.isActive = true`
-      );
-    }
+    this.applyFilters(qb, "parent", filter);
+    
     return qb.getMany();
   }
 
@@ -373,20 +368,53 @@ async update(id: any, data: DeepPartial<T>, userId: number)/*: Promise<T> */{
   async getOne(filter: Record<string, any>) {
     const qb = this.entityRepo
       .createQueryBuilder("parent")
-      .where(filter);
+      // .where(filter);
 
-    // JOIN all child tables
-    for (const cfg of this.childConfigs) {
-      const alias = this.getChildAlias(cfg);
+    this.joinChildren(this.childConfigs, qb, "parent");
 
-      qb.leftJoinAndSelect(
-        `${cfg.repo.metadata.tableName}`,
-        alias,
-        `${alias}.${this.foreignIdName} = parent.id AND ${alias}.isActive = true`
-      );
-    }
+    this.applyFilters(qb, "parent", filter);
+    
     return qb.getOne();
   }
+
+  /**
+   * Recursively join child tables
+   */
+  private joinChildren = (configs: ChildConfig[], qb: any, parentAlias: string) => {
+    for (const cfg of configs) {
+      const alias = cfg.relation;
+
+      qb.leftJoinAndSelect(`${parentAlias}.${cfg.relation}`, alias);
+
+      if (cfg.children) {
+        this.joinChildren(cfg.children, qb, alias);
+      }
+    }
+  };
+
+  private applyFilters(
+    qb: any,
+    alias: string,
+    filter: Record<string, any>
+  ) {
+    for (const key in filter) {
+      const value = filter[key];
+
+      // CASE 1 — Nested filter → apply to child alias
+      if (typeof value === "object" && !Array.isArray(value)) {
+        const childAlias = key; // must match cfg.relation alias
+        this.applyFilters(qb, childAlias, value);
+        continue;
+      }
+
+      // CASE 2 — Primitive filter on this alias
+      const paramName = `${alias}_${key}`;
+      qb.andWhere(`${alias}.${key} = :${paramName}`, {
+        [paramName]: value,
+      });
+    }
+  }
+
 
   async getPermission(key: string) {
     const step = this.engine.getStep(key);

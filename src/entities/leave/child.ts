@@ -1,5 +1,6 @@
-import { Entity, PrimaryGeneratedColumn, ManyToOne, Column, CreateDateColumn } from "typeorm";
+import { Entity, PrimaryGeneratedColumn, ManyToOne, Column, OneToMany } from "typeorm";
 import { LeaveRequest } from "./LeaveRequest";
+import { SubChild } from "./subChild";
 
 @Entity()
 export class Child {
@@ -17,4 +18,7 @@ export class Child {
 
   @ManyToOne(() => LeaveRequest, request => request.children) // <<< References 'request.child'
   request: LeaveRequest;
+  
+  @OneToMany(() => SubChild, subChild => subChild.child) 
+  subChild: SubChild[];
 }
