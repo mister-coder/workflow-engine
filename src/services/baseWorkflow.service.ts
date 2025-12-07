@@ -5,7 +5,7 @@ import { DeepPartial } from "typeorm";
 
 export interface ChildConfig {
   repo: Repository<any>;
-  snapshotRepo: Repository<any>;
+  snapshotRepo?: Repository<any>;
   foreignKey: string;
   relation: string;
   children?: ChildConfig[];   // recursion works here
@@ -144,12 +144,20 @@ export class GenericWorkflowService<T extends { id: number; currentStepKey: stri
 
       // Save snapshots for each child along with foreign key to parent
 
-      savedChild.forEach(async (child: any) => {
-        await manager.save(cfg.snapshotRepo.target, {
-          ...child,
-          [cfg.foreignKey]: child.id,
-        });
-      })
+      if (cfg.snapshotRepo) {
+        for (const child of savedChild) {
+          await manager.save(cfg.snapshotRepo.target, {
+            ...child,
+            [cfg.foreignKey]: child.id,
+          });
+        }
+        // savedChild.forEach(async (child: any) => {
+        //   await manager.save(cfg?.snapshotRepo?.target, {
+        //     ...child,
+        //     [cfg.foreignKey]: child.id,
+        //   });
+        // })
+      }
     }
   }
   
@@ -169,11 +177,13 @@ export class GenericWorkflowService<T extends { id: number; currentStepKey: stri
         .getRawOne();
 
       // Mark all existing children inactive
+    if (cfg.snapshotRepo) {
       await manager.update(
         cfg.repo.target,
         { [this.foreignIdName]: parentId },
         { isActive: false }
       );
+    }
 
       const nextVersion = (previousMax?.max || 0) + 1;
 
@@ -191,9 +201,8 @@ export class GenericWorkflowService<T extends { id: number; currentStepKey: stri
       // Map each child row to include foreign key to parent
       const mapped = rows.map((child: any) => ({
         ...child,
-        [this?.foreignIdName]: parentId,
-        version: nextVersion,
-        isActive: true,
+        [this.foreignIdName]: parentId,
+        ...(cfg.snapshotRepo ? { version: nextVersion, isActive: true } : {}),
       }));
 
       // Save child records
@@ -201,12 +210,14 @@ export class GenericWorkflowService<T extends { id: number; currentStepKey: stri
 
       // Save snapshots for each child along with foreign key to parent
 
-      savedChild.forEach(async (child: any) => {
-        await manager.save(cfg.snapshotRepo.target, {
-          ...child,
-          [cfg.foreignKey]: child.id,
-        });
-      })
+      if (cfg.snapshotRepo) {
+        for (const child of savedChild) {
+          await manager.save(cfg.snapshotRepo.target, {
+            ...child,
+            [cfg.foreignKey]: child.id,
+          });
+        }
+      }
     }
   }
 
