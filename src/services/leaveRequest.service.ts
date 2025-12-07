@@ -23,12 +23,14 @@ export class LeaveRequestService extends GenericWorkflowService<LeaveRequest> {
         {
           repo: AppDataSource.getRepository(Child),
           snapshotRepo: AppDataSource.getRepository(ChildSnapshot),
+          write: false,
           foreignKey: "child",
           relation: "children",
           children: [
             {
               repo: AppDataSource.getRepository(Child),
               snapshotRepo: AppDataSource.getRepository(ChildSnapshot),
+              write: false,
               foreignKey: "subChild",
               relation: "subChild",
             }
@@ -37,6 +39,7 @@ export class LeaveRequestService extends GenericWorkflowService<LeaveRequest> {
         {
           repo: AppDataSource.getRepository(SecondChild),
           snapshotRepo: AppDataSource.getRepository(SecondChildSnapshot),
+          write: true,
           foreignKey: "secondChild",
           relation: "secondChildren",
         }

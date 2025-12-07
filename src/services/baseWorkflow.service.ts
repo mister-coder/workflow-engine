@@ -8,7 +8,8 @@ export interface ChildConfig {
   snapshotRepo?: Repository<any>;
   foreignKey: string;
   relation: string;
-  children?: ChildConfig[];   // recursion works here
+  children?: ChildConfig[];   // recursion works here  
+  write?: boolean;
 }
 
 export class GenericWorkflowService<T extends { id: number; currentStepKey: string; status: string }> {
@@ -120,6 +121,9 @@ export class GenericWorkflowService<T extends { id: number; currentStepKey: stri
    */
   private async saveChildren(manager: any, parentId: number, extracted: any) {
     for (const cfg of this.childConfigs) {
+      // Skip if write is false
+      if (!cfg.write) continue;
+
       let table = cfg.repo.metadata.tableName;
 
       // Convert snake case to camelCase if needed
@@ -166,6 +170,9 @@ export class GenericWorkflowService<T extends { id: number; currentStepKey: stri
    */
   private async updateChildren(manager: any, parentId: number, extracted: any) {
     for (const cfg of this.childConfigs) {
+      // Skip if write is false
+      if (!cfg.write) continue;
+      
       let table = cfg.repo.metadata.tableName;
 
       // Determine the next version
