@@ -18,7 +18,7 @@ router.post("/", async (req: any, res: any) => {
       createdBy: req.body.createdById,
       child: req.body.child,
       secondChild: req.body.secondChild,
-    } as any, req.body.createdBy);
+    } as any, req.body.createdBy, { startStepKey: 'HR_REVIEW' } );
     res.status(201).json(request);
   } catch (err: any) {
     console.error(err);
@@ -131,6 +131,22 @@ router.get("/:id/actions", async (req: any, res: any) => {
   const id = parseInt(req.params.id, 10);
   try {
     const actions = await leaveService.getAvailableActions(id);
+    res.json(actions);
+  } catch (err: any) {
+    console.error(err);
+    res.status(500).json({ message: err.message });
+  }
+});
+
+/**
+ * GET /leave/:id/useractions
+ * List all available actions for a leave request
+ */
+router.get("/:id/useractions", async (req: any, res: any) => {
+  const id = parseInt(req.params.id, 10);
+  console.log('test', req.params.id, 10);
+  try {
+    const actions = await leaveService.getAvailableActionsForUser(id, 'Employee');
     res.json(actions);
   } catch (err: any) {
     console.error(err);

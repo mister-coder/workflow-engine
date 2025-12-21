@@ -7,6 +7,7 @@ import * as path from "path";
 export interface WorkflowStep {
   key: string;      // Unique code for the step (e.g. DRAFT)
   name: string;     // Human-readable name
+  domainOwner?: string[];   // ownership roles for this step, do not use in engine logic
   
   // OPTIONAL PERMISSIONS:
   permissions?: {
@@ -24,6 +25,7 @@ export interface WorkflowTransition {
   toStepKey: string;
   action: string;
   status?: string;
+  permissions?: string[];
 }
 
 /**
@@ -61,6 +63,18 @@ export class WorkflowEngine {
   getAvailableTransitions(currentStepKey: string): WorkflowTransition[] {
     return this.workflow.transitions.filter(
       t => t.fromStepKey === currentStepKey
+    );
+  }
+
+  /**
+   * Get all available actions for a user role at a given step
+   */
+  getAvailableActionsForUser(currentStepKey: string, userRole: string) {
+    console.log(`Checking available actions for user role: ${userRole} at step: ${currentStepKey}`);
+    return this.workflow.transitions.filter(t =>
+      t.fromStepKey === currentStepKey &&
+      // (!t.permissions || t.permissions.includes(userRole))
+      t?.permissions?.includes(userRole)
     );
   }
 
@@ -103,6 +117,22 @@ export class WorkflowEngine {
    */
   getStep(stepKey: string): WorkflowStep | undefined {
     return this.workflow.steps.find(s => s.key === stepKey);
+  }
+
+  /**
+   * Check if a step exists
+   */
+  hasStep(stepKey: string): boolean {
+    return this.workflow.steps.some(s => s.key === stepKey);
+  }
+
+  /**
+   * Get step details or throw an error if not found given step key
+   */
+  getStepOrThrow(stepKey: string) {
+    const step = this.getStep(stepKey);
+    if (!step) throw new Error(`Invalid start step: ${stepKey}`);
+    return step;
   }
 
 }

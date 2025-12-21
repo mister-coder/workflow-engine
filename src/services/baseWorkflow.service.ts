@@ -12,6 +12,16 @@ export interface ChildConfig {
   write?: boolean;
 }
 
+interface WorkflowCreateOptions {
+  startStepKey?: string;
+  // comment?: string;
+  // source?: "api" | "import" | "system";
+  // skipPermissionCheck?: boolean;
+  // statusOverride?: string;
+  // metadata?: Record<string, any>;
+}
+
+
 export class GenericWorkflowService<T extends { id: number; currentStepKey: string; status: string }> {
   private engine: WorkflowEngine;
   private entityRepo: Repository<T>;
@@ -44,14 +54,19 @@ export class GenericWorkflowService<T extends { id: number; currentStepKey: stri
   /**
    * Create a new request
    */
-  async create(data: DeepPartial<T>, userId: number): Promise<T> {
+  async create(data: DeepPartial<T>, userId: number, options: WorkflowCreateOptions = {}): Promise<T> {
     return this.entityRepo.manager.transaction(async (manager) => {
+      // WARNING: The following operation will modify the entity and may affect related data.
       const initialStepKey: any = this.engine.getInitialStepKey();
+      const step = options.startStepKey
+        ? this.engine.getStepOrThrow(options.startStepKey)
+        : this.engine.getInitialStepKey();
+
       const user = await manager.findOneByOrFail(User, { id: userId });
       const entity = manager.create(this.entityRepo.target, data);
       (entity as any).createdBy = user;
-      entity.currentStepKey = initialStepKey?.key ?? "draft";
-      entity.status = initialStepKey?.name ?? "draft";
+      entity.currentStepKey = step?.key ?? "draft";
+      entity.status = step?.name ?? "draft";
 
       // Extract children
       const extractedChildren = this.extractChildren(data);
@@ -136,6 +151,7 @@ export class GenericWorkflowService<T extends { id: number; currentStepKey: stri
       const rows = extracted[table];
       
       if (!rows || rows.length === 0) continue;
+      console.log({rows})
 
       // Map each child row to include foreign key to parent
       const mapped = rows.map((child: any) => ({
@@ -192,6 +208,7 @@ export class GenericWorkflowService<T extends { id: number; currentStepKey: stri
       );
     }
 
+    console.log({target: cfg.repo.target, fn: this.foreignIdName, parentId})
       const nextVersion = (previousMax?.max || 0) + 1;
 
       // Convert snake case to camelCase if needed
@@ -310,13 +327,16 @@ async update(id: any, data: DeepPartial<T>, userId: number)/*: Promise<T> */{
       // Find the user who is performing the update
       const user = await this.userRepo.findOneByOrFail({ id: userId });
     
-      // Merge the update into the existing request
+      // Extract children before merging (prevent cascade updates)
+      const extractedChildren = this.extractChildren(data);
+      
+      // Merge the update into the existing request (without children)
       const updatedEntity = this.entityRepo.merge(existing, data);
     
       // Update metadata
       (updatedEntity as any).updatedBy = user;
     
-      // Save the updated entity
+      // Save the updated entity (children won't be cascaded)
       const saved = await this.entityRepo.save(updatedEntity);
     
       // Prepare data for snapshot: use the foreign key and exclude the entity's own ID
@@ -329,9 +349,7 @@ async update(id: any, data: DeepPartial<T>, userId: number)/*: Promise<T> */{
       // Create a snapshot of the update
       await this.createSnapshot(snapshotData, user);
 
-      // Extract children
-      const extractedChildren = this.extractChildren(data);
-      
+      // Update children explicitly using updateChildren
       await this.updateChildren(manager, saved?.id, extractedChildren);
     
       return saved;
@@ -344,6 +362,14 @@ async update(id: any, data: DeepPartial<T>, userId: number)/*: Promise<T> */{
   async getAvailableActions(id: number) {
     const entity = await this.entityRepo.findOneOrFail({ where: { id } as any });
     return this.engine.getAvailableTransitions(entity.currentStepKey);
+  }
+
+  /**
+   * List allowed transitions for user role from current step
+   */
+  async getAvailableActionsForUser(id: number, userRole: string) {
+    const entity = await this.entityRepo.findOneOrFail({ where: { id } as any });
+    return this.engine.getAvailableActionsForUser(entity.currentStepKey, userRole)?.map(t => t.action);
   }
 
   /**

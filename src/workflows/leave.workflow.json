@@ -1,7 +1,7 @@
 {
     "workflowKey": "leave",
     "steps": [
-      { "key": "DRAFT", "name": "Draft","permissions": { "view": ["Employee", "Manager"], "create": ["Employee"], "update": ["Employee"] } },
+      { "key": "DRAFT", "name": "Draft","permissions": { "view": ["Employee", "Manager"], "create": ["Employee"], "update": ["Employee"] }, "domainOwner": ["Employee"] },
       { "key": "MANAGER_REVIEW", "name": "Manager Review" },
       { "key": "HR_REVIEW", "name": "HR Review" },
       { "key": "COMPLETED", "name": "Completed" },
@@ -10,7 +10,8 @@
     "transitions": [
       { "fromStepKey": "DRAFT", "toStepKey": "MANAGER_REVIEW", "action": "submit", "status": "submitted" },
       { "fromStepKey": "MANAGER_REVIEW", "toStepKey": "HR_REVIEW", "action": "approve" },
-      { "fromStepKey": "HR_REVIEW", "toStepKey": "COMPLETED", "action": "approve", "status": "approved by HR" },
+      { "fromStepKey": "HR_REVIEW", "toStepKey": "COMPLETED", "action": "approve", "status": "approved by HR", "permissions": ["Employee", "Manager", "HR"] },
+      { "fromStepKey": "HR_REVIEW", "toStepKey": "CANCELED", "action": "cancel", "status": "canceled by HR", "permissions": ["Employee", "Manager", "HR"] },
       { "fromStepKey": "MANAGER_REVIEW", "toStepKey": "REJECTED", "action": "reject", "status": "rejected by HR" },
       { "fromStepKey": "HR_REVIEW", "toStepKey": "REJECTED", "action": "reject" }
     ]
