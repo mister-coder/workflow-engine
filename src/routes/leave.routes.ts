@@ -100,7 +100,7 @@ router.get("/getmany", async (req: any, res: any) => {
 router.get("/getone", async (req: any, res: any) => {
   try {
     const data = await leaveService.getOne({
-      id: 107,
+      id: 118,
       children: {
         isActive: true,
         subChild: {
@@ -112,7 +112,7 @@ router.get("/getone", async (req: any, res: any) => {
       secondChildren: {
         isActive: true
       }
-    });
+    }, { userRole: 'Employee', includeAvailableActions: true });
     const role = 'Employee';
     const action = 'view';
     const permission = data?.currentStepKey ? await leaveService.validateStepPermission(data.currentStepKey, role, action) : {};

@@ -21,6 +21,11 @@ interface WorkflowCreateOptions {
   // metadata?: Record<string, any>;
 }
 
+export interface GetOneOptions {
+  userRole?: string;
+  includeAvailableActions?: boolean;
+}
+
 
 export class GenericWorkflowService<T extends { id: number; currentStepKey: string; status: string }> {
   private engine: WorkflowEngine;
@@ -151,7 +156,6 @@ export class GenericWorkflowService<T extends { id: number; currentStepKey: stri
       const rows = extracted[table];
       
       if (!rows || rows.length === 0) continue;
-      console.log({rows})
 
       // Map each child row to include foreign key to parent
       const mapped = rows.map((child: any) => ({
@@ -208,7 +212,6 @@ export class GenericWorkflowService<T extends { id: number; currentStepKey: stri
       );
     }
 
-    console.log({target: cfg.repo.target, fn: this.foreignIdName, parentId})
       const nextVersion = (previousMax?.max || 0) + 1;
 
       // Convert snake case to camelCase if needed
@@ -409,7 +412,7 @@ async update(id: any, data: DeepPartial<T>, userId: number)/*: Promise<T> */{
   /**
    * Get one request with active children joined
    */
-  async getOne(filter: Record<string, any>) {
+  async getOne(filter: Record<string, any>, options?: GetOneOptions) {
     const qb = this.entityRepo
       .createQueryBuilder("parent")
       // .where(filter);
@@ -418,7 +421,22 @@ async update(id: any, data: DeepPartial<T>, userId: number)/*: Promise<T> */{
 
     this.applyFilters(qb, "parent", filter);
     
-    return qb.getOne();
+    const entity = await qb.getOne();
+    
+    if (!entity) return null;
+
+    if (
+      options?.includeAvailableActions &&
+      options?.userRole
+    ) {
+      const availableActions = await
+        this.getAvailableActionsForUser(entity?.id, options.userRole);
+
+      (entity as any).availableActions = availableActions;
+    }
+
+    return entity;
+    // return qb.getOne();
   }
 
   /**

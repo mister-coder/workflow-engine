@@ -70,12 +70,12 @@ export class WorkflowEngine {
    * Get all available actions for a user role at a given step
    */
   getAvailableActionsForUser(currentStepKey: string, userRole: string) {
-    console.log(`Checking available actions for user role: ${userRole} at step: ${currentStepKey}`);
-    return this.workflow.transitions.filter(t =>
-      t.fromStepKey === currentStepKey &&
-      // (!t.permissions || t.permissions.includes(userRole))
-      t?.permissions?.includes(userRole)
-    );
+    const actions = this.workflow.transitions.filter(t => {
+      return t.fromStepKey === currentStepKey &&
+            //  (!t.permissions || t.permissions.includes(userRole));
+             t?.permissions?.includes(userRole);
+    });
+    return actions;
   }
 
   // Get initial step key
