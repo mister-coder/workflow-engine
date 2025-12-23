@@ -462,14 +462,30 @@ async update(id: any, data: DeepPartial<T>, userId: number)/*: Promise<T> */{
     for (const key in filter) {
       const value = filter[key];
 
-      // CASE 1 — Nested filter → apply to child alias
-      if (typeof value === "object" && !Array.isArray(value)) {
+      // CASE 1 — Array → IN (...)
+      if (Array.isArray(value)) {
+        if (value.length === 0) {
+          // Prevent invalid SQL: IN ()
+          qb.andWhere("1 = 0");
+          continue;
+        }
+
+        const paramName = `${alias}_${key}`;
+        qb.andWhere(
+          `${alias}.${key} IN (:...${paramName})`,
+          { [paramName]: value }
+        );
+        continue;
+      }
+
+      // CASE 2 — Nested filter → apply to child alias
+      if (typeof value === "object" && value !== null ) {
         const childAlias = key; // must match cfg.relation alias
         this.applyFilters(qb, childAlias, value);
         continue;
       }
 
-      // CASE 2 — Primitive filter on this alias
+      // CASE 3 — Primitive filter on this alias
       const paramName = `${alias}_${key}`;
       qb.andWhere(`${alias}.${key} = :${paramName}`, {
         [paramName]: value,
