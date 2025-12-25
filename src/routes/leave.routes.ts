@@ -124,6 +124,28 @@ router.get("/getone", async (req: any, res: any) => {
 });
 
 /**
+ * GET /leave/getaggregate
+ * Get aggregate
+ */
+router.get("/getaggregate", async (req: any, res: any) => {
+  try {
+    const data = await leaveService.aggregate(
+      {},
+      {
+        groupBy: ["currentStepKey"],
+        aggregates: [
+          { fn: "COUNT", alias: "count" }
+        ]
+      }
+    );
+    res.status(200).json({ data });
+  } catch (err: any) {
+    console.error(err);
+    res.status(400).json({ message: err.message });
+  }
+});
+
+/**
  * GET /leave/:id/actions
  * List all available actions for a leave request
  */

@@ -26,6 +26,22 @@ export interface GetOneOptions {
   includeAvailableActions?: boolean;
 }
 
+/**
+ * Aggregate Options Method Contract
+ */
+export interface AggregateOptions {
+  groupBy: string[];
+  aggregates: {
+    alias: string;                      // output name
+    fn: "COUNT" | "SUM" | "AVG" | "MIN" | "MAX";
+    field?: string;                     // optional (COUNT can omit)
+  }[];
+  having?: {
+    field: string;
+    operator: "=" | ">" | "<" | ">=" | "<=";
+    value: any;
+  }[];
+}
 
 export class GenericWorkflowService<T extends { id: number; currentStepKey: string; status: string }> {
   private engine: WorkflowEngine;
@@ -454,6 +470,9 @@ async update(id: any, data: DeepPartial<T>, userId: number)/*: Promise<T> */{
     }
   };
 
+  /**
+   * Apply filter to the GET methods
+   */
   private applyFilters(
     qb: any,
     alias: string,
@@ -492,6 +511,66 @@ async update(id: any, data: DeepPartial<T>, userId: number)/*: Promise<T> */{
       });
     }
   }
+
+  /**
+   * Apply Aggregate Functions to GET queries
+   */
+  // Sample parameter
+  // {
+  //     groupBy: ["currentStepKey"],
+  //     aggregates: [
+  //       { fn: "COUNT", field: "durationInHours", alias: "count" }
+  //     ],
+  //     having: [
+  //       {
+  //         field: "COUNT(parent.id)",
+  //         operator: ">",
+  //         value: 10
+  //       }
+  //     ]
+  //   }
+  async aggregate(
+    filter: Record<string, any> = {},
+    options: AggregateOptions
+  ) {
+    const qb = this.entityRepo.createQueryBuilder("parent");
+
+    qb.select([]);
+
+    // GROUP BY columns
+    options.groupBy.forEach((field) => {
+      const col = field.includes(".") ? field : `parent.${field}`;
+      qb.addSelect(col, field.replace(".", "_"));
+      qb.addGroupBy(col);
+    });
+
+    // AGGREGATES
+    options.aggregates.forEach((agg) => {
+      const field = agg.field
+        ? agg.field.includes(".")
+          ? agg.field
+          : `parent.${agg.field}`
+        : "parent.id";
+
+      qb.addSelect(`${agg.fn}(${field})`, agg.alias);
+    });
+
+    // WHERE
+    this.applyFilters(qb, "parent", filter);
+
+    // HAVING
+    if (options.having) {
+      options.having.forEach((h, idx) => {
+        qb.andHaving(
+          `${h.field} ${h.operator} :having_${idx}`,
+          { [`having_${idx}`]: h.value }
+        );
+      });
+    }
+
+    return qb.getRawMany();
+  }
+
 
 
   async getPermission(key: string) {
