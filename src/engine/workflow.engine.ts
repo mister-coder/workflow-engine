@@ -134,5 +134,15 @@ export class WorkflowEngine {
     if (!step) throw new Error(`Invalid start step: ${stepKey}`);
     return step;
   }
-
+  
+  /**
+   * Get the viewable steps for given role
+   */
+  getViewableStepsForRole(role: string): string[] {
+    return Object.values(this.workflow.steps)
+      .filter(step =>
+        step.permissions?.view?.includes(role)
+      )
+      .map(step => step.key);
+  }
 }

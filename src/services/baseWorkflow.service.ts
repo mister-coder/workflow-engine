@@ -24,6 +24,19 @@ interface WorkflowCreateOptions {
 export interface GetOneOptions {
   userRole?: string;
   includeAvailableActions?: boolean;
+  enforceViewPermission?: boolean;
+  includeReadOnly?: boolean;
+}
+
+export interface GetManyOptions {
+  userRole?: string;
+  enforceViewPermission?: boolean;
+  includeReadOnly?: boolean;
+}
+
+interface EnforceViewableQueryOptions {
+  userRole?: string;          
+  enforceViewPermission?: boolean;
 }
 
 /**
@@ -408,14 +421,22 @@ async update(id: any, data: DeepPartial<T>, userId: number)/*: Promise<T> */{
    * 
    * Get many requests with active children joined
    */
-  async getMany(filter: Record<string, any> = {}) {
+  async getMany(filter: Record<string, any> = {}, options?: GetManyOptions) {
     const qb = this.entityRepo
       .createQueryBuilder("parent")
       // .where(filter);
 
     this.joinChildren(this.childConfigs, qb, "parent");
 
-    this.applyFilters(qb, "parent", filter);
+    // Filter out records where the currentStepKey is not viewable for the role
+    if (
+      options?.enforceViewPermission &&
+      options?.userRole
+    ) {
+      this.applyViewPermissions(qb, "parent", options);
+    }
+
+    this.applyExtendedFilters(qb, "parent", filter);
     
     return qb.getMany();
   }
@@ -430,12 +451,21 @@ async update(id: any, data: DeepPartial<T>, userId: number)/*: Promise<T> */{
 
     this.joinChildren(this.childConfigs, qb, "parent");
 
-    this.applyFilters(qb, "parent", filter);
+    // Filter out records where the currentStepKey is not viewable for the role
+    if (
+      options?.enforceViewPermission &&
+      options?.userRole
+    ) {
+      this.applyViewPermissions(qb, "parent", options);
+    }
+
+    this.applyExtendedFilters(qb, "parent", filter);
     
     const entity = await qb.getOne();
     
     if (!entity) return null;
 
+    // Get available actions for the user at the current Step
     if (
       options?.includeAvailableActions &&
       options?.userRole
@@ -444,6 +474,15 @@ async update(id: any, data: DeepPartial<T>, userId: number)/*: Promise<T> */{
         this.getAvailableActionsForUser(entity?.id, options.userRole);
 
       (entity as any).availableActions = availableActions;
+    }
+
+    // Add isReadOnly prepoerty based on user permissions
+    if (
+      options?.includeReadOnly &&
+      options?.userRole
+    ) {
+      (entity as any).isReadOnly =
+        this.isReadOnlyForUser(entity.currentStepKey, options.userRole);
     }
 
     return entity;
@@ -476,7 +515,7 @@ async update(id: any, data: DeepPartial<T>, userId: number)/*: Promise<T> */{
     for (const key in filter) {
       const value = filter[key];
 
-      // CASE 1 — Array → IN (...)
+      // CASE 1 - Array IN (...)
       if (Array.isArray(value)) {
         if (value.length === 0) {
           // Prevent invalid SQL: IN ()
@@ -492,14 +531,14 @@ async update(id: any, data: DeepPartial<T>, userId: number)/*: Promise<T> */{
         continue;
       }
 
-      // CASE 2 — Nested filter → apply to child alias
+      // CASE 2 - Nested filter apply to child alias
       if (typeof value === "object" && value !== null ) {
         const childAlias = key; // must match cfg.relation alias
         this.applyFilters(qb, childAlias, value);
         continue;
       }
 
-      // CASE 3 — Primitive filter on this alias
+      // CASE 3 - Primitive filter on this alias
       const paramName = `${alias}_${key}`;
       qb.andWhere(`${alias}.${key} = :${paramName}`, {
         [paramName]: value,
@@ -508,7 +547,141 @@ async update(id: any, data: DeepPartial<T>, userId: number)/*: Promise<T> */{
   }
 
   /**
+   * Similar to the function above but with extra operators
+   */
+  private applyExtendedFilters(
+    qb: any,
+    alias: string,
+    filter: Record<string, any>
+  ) {
+    let paramIndex = 0;
+
+    for (const key in filter) {
+      const value = filter[key];
+
+      // CASE 1 - Array IN (backward compatible)
+      if (Array.isArray(value)) {
+        if (value.length === 0) {
+          qb.andWhere("1 = 0");
+          continue;
+        }
+
+        const paramName = `${alias}_${key}_${paramIndex++}`;
+        qb.andWhere(
+          `${alias}.${key} IN (:...${paramName})`,
+          { [paramName]: value }
+        );
+        continue;
+      }
+
+      // CASE 2 - Operator object
+      if (this.isOperatorObject(value)) {
+        this.applyOperatorFilter(qb, alias, key, value, paramIndex++);
+        continue;
+      }
+
+      // CASE 3 - Nested relation
+      if (typeof value === "object" && value !== null) {
+        const childAlias = key; // must match join alias
+        this.applyExtendedFilters(qb, childAlias, value);
+        continue;
+      }
+
+      // CASE 4 - Primitive equality
+      const param = `${alias}_${key}_${paramIndex++}`;
+      qb.andWhere(`${alias}.${key} = :${param}`, {
+        [param]: value,
+      });
+    }
+  }
+
+  /**
+   * Operator Detection Helper
+   */
+  private isOperatorObject(value: any): boolean {
+    if (typeof value !== "object" || value === null || Array.isArray(value)) {
+      return false;
+    }
+
+    const operators = new Set([
+      "eq", "ne",
+      "gt", "gte",
+      "lt", "lte",
+      "in", "between",
+      "like", "ilike",
+    ]);
+
+    return Object.keys(value).some(k => operators.has(k));
+  }
+
+  /**
+   * Operator application function
+   */
+  // Sample operators in actions
+  // {
+  //   status: "APPROVED",                // =
+  //   createdAt: { gt: "2024-01-01" },   // >
+  //   amount: { between: [1000, 5000] }, // BETWEEN
+  //   id: { in: [1, 2, 3] },              // IN
+  //   duration: { lte: 8 },               // <=
+  // }
+  private applyOperatorFilter(
+    qb: any,
+    alias: string,
+    key: string,
+    ops: Record<string, any>,
+    paramIndex: number
+  ) {
+    const column = `${alias}.${key}`;
+
+    for (const op in ops) {
+      const param = `${alias}_${key}_${op}_${paramIndex}`;
+
+      switch (op) {
+        case "gt":
+          qb.andWhere(`${column} > :${param}`, { [param]: ops[op] });
+          break;
+        case "gte":
+          qb.andWhere(`${column} >= :${param}`, { [param]: ops[op] });
+          break;
+        case "lt":
+          qb.andWhere(`${column} < :${param}`, { [param]: ops[op] });
+          break;
+        case "lte":
+          qb.andWhere(`${column} <= :${param}`, { [param]: ops[op] });
+          break;
+        case "in":
+          qb.andWhere(`${column} IN (:...${param})`, { [param]: ops[op] });
+          break;
+        case "between":
+          qb.andWhere(
+            `${column} BETWEEN :${param}_1 AND :${param}_2`,
+            {
+              [`${param}_1`]: ops[op][0],
+              [`${param}_2`]: ops[op][1],
+            }
+          );
+          break;
+        case "like":
+          qb.andWhere(`${column} LIKE :${param}`, { [param]: `%${ops[op]}%` });
+          break;
+        case "ilike":
+          qb.andWhere(`${column} ILIKE :${param}`, { [param]: `%${ops[op]}%` });
+          break;
+        case "eq":
+          qb.andWhere(`${column} = :${param}`, { [param]: ops[op] });
+          break;
+        case "ne":
+          qb.andWhere(`${column} != :${param}`, { [param]: ops[op] });
+          break;
+      }
+    }
+  }
+
+
+  /**
    * Apply Aggregate Functions to GET queries
+   * Please only use for analytics
    */
   // Sample parameter
   // {
@@ -548,7 +721,45 @@ async update(id: any, data: DeepPartial<T>, userId: number)/*: Promise<T> */{
 
     return qb.getRawMany();
   }
+  
+  /**
+   * If user has view permissions, allow them to query records with the given steps
+   */
+  private applyViewPermissions(
+    qb: any,
+    alias: string,
+    options?: EnforceViewableQueryOptions
+  ) {
+    if (!options?.enforceViewPermission || !options.userRole) {
+      return;
+    }
 
+    const viewableSteps =
+      this.engine.getViewableStepsForRole(options.userRole);
+
+    if (!viewableSteps.length) {
+      qb.andWhere("1 = 0"); // hard deny
+      return;
+    }
+
+    qb.andWhere(
+      `${alias}.currentStepKey IN (:...viewSteps)`,
+      { viewSteps: viewableSteps }
+    );
+  }
+
+  /**
+   * check if the user has update permissions upon GET in the given step
+   */
+  private isReadOnlyForUser(stepKey: string, userRole?: string): boolean {
+    if (!userRole) return false; // backward compatible
+
+    const perms = this.engine.getStep(stepKey)?.permissions?.update;
+
+    if (!perms || perms.length === 0) return false; // no restriction
+
+    return !perms.includes(userRole);
+  }
 
 
   async getPermission(key: string) {

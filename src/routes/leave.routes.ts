@@ -85,7 +85,13 @@ router.post("/actions", async (req: any, res: any) => {
  */
 router.get("/getmany", async (req: any, res: any) => {
   try {
-    const data = await leaveService.getMany({});
+    const data = await leaveService.getMany({
+      id: { between: [ 19, 25 ] }
+    }, {
+      userRole: "Employee",
+      enforceViewPermission: true,
+      includeReadOnly: true
+    });
     res.status(200).json({ data });
   } catch (err: any) {
     console.error(err);
@@ -101,18 +107,18 @@ router.get("/getone", async (req: any, res: any) => {
   try {
     const data = await leaveService.getOne({
       id: 118,
-      children: {
-        isActive: true,
-        subChild: {
-          // isActive: false
-          // id: (2 || null)
-          // id: { $or: [ 1, null ] }
-        }
-      },
-      secondChildren: {
-        isActive: true
-      }
-    }, { userRole: 'Employee', includeAvailableActions: true });
+      // children: {
+      //   isActive: true,
+      //   subChild: {
+      //     // isActive: false
+      //     // id: (2 || null)
+      //     // id: { $or: [ 1, null ] }
+      //   }
+      // },
+      // secondChildren: {
+      //   isActive: true
+      // }
+    }, { userRole: 'Employee', includeAvailableActions: true, enforceViewPermission: true, includeReadOnly: true });
     const role = 'Employee';
     const action = 'view';
     const permission = data?.currentStepKey ? await leaveService.validateStepPermission(data.currentStepKey, role, action) : {};
