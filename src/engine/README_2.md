@@ -177,6 +177,30 @@ create(data, userId, { startStepKey: "HR_REVIEW" })
 2. JSON encodes the Business Logic
 4. Multiple workflows can coexist independently
 
+## Workflow Engine
+
+The WorkflowEngine is a lightweight, stateless interpreter for workflow blueprints.
+
+It is responsible for loading workflow definitions from disk and enforcing the rules declared in the JSON blueprint. The engine contains no persistence logic and does not mutate application state.
+
+### Responsibilities
+
+The engine provides:
+
+1. Workflow loading and validation
+2. Step and transition resolution
+3. Action availability checks
+4. Role-based visibility and action filtering
+
+### Loading Workflows
+
+Workflows are loaded at runtime using a workflow key:
+```
+const engine = new WorkflowEngine("request");
+```
+
+
+
 ## Blueprint JSON Example
 
  {
