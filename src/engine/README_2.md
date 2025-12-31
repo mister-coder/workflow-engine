@@ -1,5 +1,5 @@
 # Generic Workflow Engine
-<sub>Muhammad (muhammad) Ragialla</sub>\
+<sub>Muhammad (muhammad) Ragialla</sub>\\\
 A lightweight, class-based declarative state machine engine for building customizable, multi-user approval workflows.
 All workflow behavior is defined externally using JSON blueprints, making workflows portable, editable, and independent of application code.
 
