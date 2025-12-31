@@ -9,13 +9,13 @@ The Generic Workflow Engine executes request flows using a finite state machine 
 
 Rather than hard-coding workflow logic, each workflow is described using a JSON blueprint that declares:
 
-- The valid steps in the process
+1. The valid steps in the process
 
-- The allowed transitions between those steps
+2. The allowed transitions between those steps
 
-- The actions that trigger each transition
+3. The actions that trigger each transition
 
-- The engine interprets this declaration at runtime and enforces it consistently.
+The engine interprets this declaration at runtime and enforces it consistently.
 
 
 ## Understanding the State Machine
