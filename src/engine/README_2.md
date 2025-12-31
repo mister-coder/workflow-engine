@@ -231,6 +231,38 @@ If no transition exists, the action is invalid.
 The engine guarantees determinism by selecting at most one transition per **(step, action)** pair.
 
 
+### Available Actions
+
+The engine can list all transitions available from a step:
+
+```
+engine.getAvailableTransitions("CHAMP_REVIEW");
+```
+
+Or filter actions by role:
+```
+engine.getAvailableActionsForUser("HEAD_REVIEW", "Employee");
+```
+
+Transition-level permissions are enforced declaratively based on the blueprint.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
