@@ -709,6 +709,61 @@ Define workflow metadata, steps, actions, permissions, and child configurations.
 1. Stored in **/workflows/<workflow>.json**
 2. Drives UI, API validation, and workflow engine logic
 
+```
+{
+  "key": "expense",
+  "name": "Expense Request",
+  "entity": "ExpenseRequest",
+  "historyEntity": "ExpenseHistory",
+  "snapshotEntity": "ExpenseSnapshot",
+  "children": [
+    {
+      "entity": "ExpenseChild",
+      "snapshotEntity": "ExpenseChildSnapshot",
+      "relation": "children",
+      "write": true,
+      "children": []
+    }
+  ],
+  "steps": [
+    {
+      "key": "draft",
+      "name": "Draft",
+      "actions": ["submit", "cancel"],
+      "permissions": {
+        "owner": ["submit", "cancel"],
+        "manager": []
+      }
+    },
+    {
+      "key": "manager_approval",
+      "name": "Manager Approval",
+      "actions": ["approve", "reject"],
+      "permissions": {
+        "manager": ["approve", "reject"],
+        "owner": []
+      }
+    },
+    {
+      "key": "finance_approval",
+      "name": "Finance Approval",
+      "actions": ["approve", "reject"],
+      "permissions": {
+        "finance": ["approve", "reject"],
+        "owner": []
+      }
+    },
+    {
+      "key": "completed",
+      "name": "Completed",
+      "actions": [],
+      "permissions": {}
+    }
+  ],
+  "defaultStep": "draft"
+}
+```
+
 
 
 
