@@ -135,6 +135,44 @@ there must be at most one transition.
 If no matching transition exists, the engine rejects the action.
 This prevents invalid state changes and enforces workflow correctness.
 
+## Status Resolution
+When a transition is executed:
+
+1. If a status is defined on the transition, it is applied
+2. If no status is defined, the human-readable name of the step is taken as the status
+3. Otherwise, a default status is inferred by the service
+
+This allows status logic to remain declarative and workflow-specific.
+
+## Initial Step
+
+The first step in the steps array is treated as the initial step unless overridden during creation.
+```
+create(data, userId, { startStepKey: "HR_REVIEW" })
+```
+
+### Example Blueprint
+```
+{
+  "workflowKey": "leave",
+  "steps": [
+    { "key": "DRAFT", "name": "Draft" },
+    { "key": "CHAMP_REVIEW", "name": "Champ Review" },
+    { "key": "HEAD_REVIEW", "name": "HEAD Review" },
+    { "key": "COMPLETED", "name": "Completed" },
+    { "key": "REJECTED", "name": "Rejected" }
+  ],
+  "transitions": [
+    { "fromStepKey": "DRAFT", "toStepKey": "CHAMP_REVIEW", "action": "submit" },
+    { "fromStepKey": "CHAMP_REVIEW", "toStepKey": "HEAD_REVIEW", "action": "approve" },
+    { "fromStepKey": "HEAD_REVIEW", "toStepKey": "COMPLETED", "action": "approve" },
+    { "fromStepKey": "CHAMP_REVIEW", "toStepKey": "REJECTED", "action": "reject" },
+    { "fromStepKey": "HEAD_REVIEW", "toStepKey": "REJECTED", "action": "reject" }
+  ]
+}
+```
+
+
 ## Blueprint JSON Example
 
  {
