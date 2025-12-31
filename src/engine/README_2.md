@@ -444,6 +444,41 @@ interface ChildConfig {
 - relation matches the property name on the entity.
 - Used in leftJoinAndSelect queries to include children in GET operations.
 
+### Snapshots
+
+Snapshots are immutable copies of entities and children at a specific point in time.
+
+#### Behavior
+
+1. Created on:
+- Entity creation
+- Entity updates
+- Writable child updates
+
+2. Versioning
+- Child snapshots track a version number.
+- On updates, existing active child records are marked inactive.
+- New child records are assigned a new version.
+
+3. Parent Linkage
+- Each snapshot references the parent via the foreignKey.
+- Ensures reconstruction of full entity state at any point in time.
+
+#### Example Workflow
+1. Parent Record Creation
+- Extract children from payload.
+- Save parent entity.
+- Create snapshots for parent and writable children.
+
+2. Parent Record Update
+- Extract children and mark previous active child versions inactive.
+- Save new child versions with incremented version.
+- Create snapshots for parent and updated children.
+
+3. Nested Children
+- Snapshots propagate recursively for nested children.
+- Each snapshot remains immutable, capturing the exact state at creation.
+
 
 
 
