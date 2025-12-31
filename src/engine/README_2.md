@@ -80,11 +80,11 @@ A step represents a state in the workflow lifecycle.
   "key": "DRAFT",
   "name": "Draft",
   "permissions": {
-    "view": ["Employee", "Manager"],
-    "create": ["Employee"],
-    "update": ["Employee"]
+    "view": ["Champ", "Head"],
+    "create": ["Champ"],
+    "update": ["Head"]
   },
-  "domainOwner": ["Employee"]
+  "domainOwner": ["Champ"]
 }
 ```
 
