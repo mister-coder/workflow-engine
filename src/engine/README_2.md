@@ -729,6 +729,12 @@ export class ExpenseChild extends BaseEntity {
   @PrimaryGeneratedColumn("uuid")
   id: string;
 
+  // versioning fields in many to one relationship
+  @Column({  default: 1, nullable: true })
+  version: number;
+  @Column({  default: true, nullable: true })
+  isActive: boolean;
+
   @ManyToOne(() => ExpenseRequest, request => request.children)
   expenseRequest: ExpenseRequest;
 
@@ -793,6 +799,40 @@ export class ExpenseHistory extends BaseEntity {
   timestamp: Date;
 }
 ```
+
+## foreignKey and children Relationship
+
+The workflow engine uses a child configuration system to manage nested entities and their snapshots. Two key concepts govern this:
+
+1. foreignKey — references the parent or current record in a child snapshot.
+2. children — defines nested child entities that belong to a parent entity or another child.
+
+### foreignKey
+
+The foreignKey is the property name in the snapshot entity that links it back to its parent record.
+
+When saving a snapshot for a child entity, the engine assigns:
+
+```
+await manager.save(cfg.snapshotRepo.target, {
+  ...child,
+  [cfg.foreignKey]: child.id,
+});
+```
+
+```
+{
+  repo: AppDataSource.getRepository(Child),
+  snapshotRepo: AppDataSource.getRepository(ChildSnapshot),
+  write: true,
+  foreignKey: "child", // links ChildSnapshot → Child
+  relation: "children",
+}
+```
+In this case:
+1. ChildSnapshot.child stores the ID of the original Child record.
+2. Ensures immutable versioning: each snapshot is linked to the entity it represents, independent of the parent workflow.
+
 
 ### Create the Workflow Service
 
