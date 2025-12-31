@@ -479,6 +479,94 @@ Snapshots are immutable copies of entities and children at a specific point in t
 - Snapshots propagate recursively for nested children.
 - Each snapshot remains immutable, capturing the exact state at creation.
 
+## Permissions & Access Control
+
+The workflow engine supports granular, role-based access control (RBAC) at both step-level and transition-level, ensuring that users only see and act on what they are allowed to. All access rules are declared in the workflow JSON blueprint, keeping enforcement deterministic, transparent, and fully auditable.
+
+### Step-Level Permissions
+
+Each workflow step can optionally define which roles are allowed to view, create, or update the entity in that step:
+
+
+```
+{
+  "key": "DRAFT",
+  "name": "Draft",
+  "permissions": {
+    "view": ["CHAMP", "HEAD"],
+    "create": ["CHAMP"],
+    "update": ["CHAMP"]
+  }
+}
+```
+```
+| Permission | Description                                                                                        |
+| ---------- | -------------------------------------------------------------------------------------------------- |
+| `view`     | Roles that can see this step when querying entities. If omitted, all roles can view.               |
+| `create`   | Roles that can create new entities starting at this step.                                          |
+| `update`   | Roles that can update entities currently in this step. Entities are read-only for all other roles. |
+```
+
+### Read-Only Enforcement
+
+When retrieving entities via getOne or getMany, the service automatically exposes an isReadOnly flag based on the update permission for the current user role:
+
+```
+const entity = await workflowService.getOne({ id: 1 }, {
+  userRole: 'Employee',
+  includeReadOnly: true
+});
+
+console.log(entity.isReadOnly); // true if user cannot update in current step
+```
+
+The isReadOnly property allows UI layers to disable fields, buttons, or actions without querying additional permission endpoints.
+
+### Transition-Level Permissions
+Transitions can also define role-based permissions. These determine who can perform an action to move the workflow from one step to another:
+
+```
+{
+  "fromStepKey": "HR_REVIEW",
+  "toStepKey": "COMPLETED",
+  "action": "approve",
+  "permissions": ["Employee", "Manager", "HR"]
+}
+```
+
+1. If permissions is omitted, the action is available to all roles.
+2. Transition-level permissions are enforced at execution time by the service’s performAction method. Unauthorized users attempting the action will receive an error.
+
+```
+await workflowService.validateStepPermission(
+  'CHAMP_REVIEW', 
+  'CHAMP', 
+  'update'
+); // true if Employee can update in HR_REVIEW
+```
+
+### Role Visibility
+
+Roles can also be used to filter which entities are visible:
+
+```
+const entities = await workflowService.getMany({}, {
+  userRole: "Employee",
+  enforceViewPermission: true
+});
+```
+
+1. Only entities in steps that the role has **view** permission for will be returned.
+2. If a role has no viewable steps, queries automatically return an empty set.
+
+### Enforcement Philosophy
+1. Declarative over procedural: All permissions are defined in the JSON blueprint, not hard-coded.
+2. Immutable audit trail: Read-only enforcement ensures that users without update rights cannot modify historical workflow states.
+3. Layered checks:
+- Step-level view controls what the user can query.
+- Step-level update determines read-only status.
+- Transition-level permissions determine actionable transitions.
+4. Service-enforced, not engine-enforced: The WorkflowEngine exposes permission data; the GenericWorkflowService enforces it against database operations.
 
 
 
