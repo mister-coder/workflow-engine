@@ -572,6 +572,47 @@ const entities = await workflowService.getMany({}, {
 - Transition-level permissions determine actionable transitions.
 4. Service-enforced, not engine-enforced: The WorkflowEngine exposes permission data; the GenericWorkflowService enforces it against database operations.
 
+## Filtering, Grouping, and Aggregation
+The workflow engine supports dynamic querying of workflow records through filters, grouping, and aggregations. These can be applied via the service layer or API calls.
+
+### Filters
+Filters are applied to workflow fields, child entity fields, or system fields (status, createdAt, etc.):
+
+1. Basic filter: { field: value }
+Retrieves records where field === value.
+
+2. Operators:
+- eq — equal
+- ne — not equal
+- in — in array
+- nin — not in array
+- lt, $lte, $gt, $gte — comparison operators
+- like — partial string match
+
+3. Nested filters: Filters can target child entities or snapshots by specifying the relation.
+
+Example for getMany:
+
+```
+workflowService.getMany({
+  filter: {
+    status: "draft",
+    ownerId: "user-123",
+    children: {
+      description: { like: "%travel%" }
+    }
+  }
+});
+```
+
+### Grouping
+
+Grouping allows aggregation over one or more fields.
+- groupBy parameter specifies fields to group results by.
+- Works in combination with filters.
+Example for aggregate:
+
+
 
 ## Adding a New Workflow
 
