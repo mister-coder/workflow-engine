@@ -123,7 +123,17 @@ A transition defines a valid movement from one step to another.
 | `status`      | Optional status applied after transition     |
 | `permissions` | Optional roles allowed to perform the action |
 ```
+If permissions is omitted, the action is available to all roles.
 
+## Determinism & Validation
+For any given combination of:
+1. currentStepKey
+2. action
+
+there must be at most one transition.
+
+If no matching transition exists, the engine rejects the action.
+This prevents invalid state changes and enforces workflow correctness.
 
 ## Blueprint JSON Example
 
