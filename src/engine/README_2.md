@@ -199,6 +199,40 @@ Workflows are loaded at runtime using a workflow key:
 const engine = new WorkflowEngine("request");
 ```
 
+This resolves and parses:
+```
+/workflows/request.workflow.json
+```
+
+Blueprints are cached per engine instance.
+
+
+### Step Resolution
+
+Steps are resolved by their **key**.
+
+```
+engine.getStep("CHAMP_REVIEW");
+engine.getStepName("CHAMP_REVIEW");
+```
+
+The engine can also validate step existence and throw if a step is invalid.
+
+### Transition Resolution
+
+Transitions are resolved using the current step and an action:
+
+```
+engine.getTransition("DRAFT", "submit");
+```
+
+If no transition exists, the action is invalid.
+
+The engine guarantees determinism by selecting at most one transition per **(step, action)** pair.
+
+
+
+
 
 
 ## Blueprint JSON Example
