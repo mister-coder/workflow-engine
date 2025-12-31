@@ -4,7 +4,7 @@ All workflow behavior is defined externally using JSON blueprints, making workfl
 
 The engine is designed to power request-driven processes and any multi-step lifecycle requiring deterministic transitions and auditability.
 
-## What Is This?
+## Purpose
 The Generic Workflow Engine executes request flows using a finite state machine model defined declaratively.
 
 Rather than hard-coding workflow logic, each workflow is described using a JSON blueprint that declares:
@@ -24,61 +24,35 @@ For any given state and action, the next state is deterministic. If no transitio
 
 This guarantees that requests cannot skip steps or move to undefined states.
 
-### Example:
-This example from leave.json blueprint defines a state machine like this:
+Example
 
-- [DRAFT] --submit--> [MANAGER_REVIEW]
-- [MANAGER_REVIEW] --approve--> [HR_REVIEW]
-- [HR_REVIEW] --approve--> [COMPLETED]
-- [MANAGER_REVIEW] --reject--> [REJECTED]
-- [HR_REVIEW] --reject--> [REJECTED]
-The system enforces that only valid transitions (defined in the blueprint) are allowed.
+From a request workflow blueprint:
 
-The workflow cannot jump between unrelated states.
+```
+[DRAFT] --submit--> [CHAMP_REVIEW]
+[CHAMP_REVIEW] --approve--> [HEAD_REVIEW]
+[HEAD_REVIEW] --approve--> [COMPLETED]
+[CHAMP_REVIEW] --reject--> [REJECTED]
+[HEAD_REVIEW] --reject--> [REJECTED]
+```
 
-## Why a State Machine?
-Using a state machine brings the following benefits:
+Only the transitions declared in the blueprint are permitted.
 
-- Predictable: Every state and transition is explicitly defined.
+### Declarative
+A declarative workflow model makes behavior explicit and predictable.
+Workflow changes are made by editing configuration rather than code, enabling safer iteration, easier review, and consistent enforcement across environments.
 
-- Auditable: Transition history can be tracked clearly.
 
-- Safe: Invalid actions are automatically blocked.
+## Workflow Definition (JSON Blueprint)
 
-- Flexible: You can model simple or complex flows using the same JSON structure.
+Each workflow is defined using a declarative JSON blueprint.
+This file describes the complete state machine: its steps, transitions, actions, and optional permissions.
 
-- Visualizable: You can render the graph easily using tools like Mermaid or D3.js.
+Blueprints live outside application code and are loaded at runtime by the WorkflowEngine.
 
-## Folder Structure
-.
-
-├── blueprints/                # JSON files defining each workflow
-
-│   └── leave.json             # Example: leave request workflow
-
-├── src/
-
-│   ├── engine/                # Core state machine engine
-
-│   │   └── WorkflowEngine.ts
-
-│   ├── services/              # Workflow orchestration (e.g. transitions, history)
-
-│   ├── controllers/           # Express handlers
-
-│   ├── routes/                # API endpoints
-
-│   ├── models/                # TypeORM entities: Request, History, etc.
-
-│   ├── utils/                 # Utility functions (e.g., load blueprint)
-
-│   ├── app.ts                 # Express app setup
-
-│   └── server.ts              # App entry point
-
-├── workflow.types.ts          # Shared types/interfaces
-
-└── README.md
+```
+/workflows/{workflowKey}.workflow.json
+```
 
 ## Blueprint JSON Example
 
