@@ -266,10 +266,56 @@ This behavior can be overridden by the service layer during creation.
 
 
 
+## GenericWorkflowService
+
+**GenericWorkflowService** binds a declarative workflow definition to a persistent domain entity.
+It is responsible for executing workflow actions, enforcing workflow rules, managing persistence, and coordinating history and snapshots.
+
+Each concrete workflow (e.g. Requests) extends this service with its own entity and repositories.
+
+### Role in the Architecture
+
+The service sits between:
+
+1. The WorkflowEngine (rules & transitions)
+2. The database layer (TypeORM repositories)
+3. The API layer (controllers / routes)
+
+It translates declarative workflow rules into transactional database operations.
 
 
+### Entity Requirements
 
+A workflow entity must contain at least:
 
+```
+{
+  id: number;
+  currentStepKey: string;
+  status: string;
+}
+```
+
+These fields allow the service to determine:
+1. Current workflow state
+2. Valid transitions
+3. Available actions
+4. Read/write permissions
+
+### Creation
+
+Creating a new workflow record initializes it at a starting step and persists an initial snapshot.
+
+```
+create(data, userId, { startStepKey?: string })
+```
+
+Behavior:
+1. Resolves the initial step from the blueprint (or override)
+2. Sets currentStepKey and status
+3. Persists the entity in a transaction
+4. Creates an immutable snapshot of the initial state
+5. Saves configured child entities
 
 
 
