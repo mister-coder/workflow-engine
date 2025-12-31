@@ -90,6 +90,18 @@ A step represents a state in the workflow lifecycle.
 
 ```
 
+## Step Fields
+
+```
+| Field         | Description                                |
+| ------------- | ------------------------------------------ |
+| `key`         | Unique identifier for the step             |
+| `name`        | Human-readable label                       |
+| `permissions` | Optional role-based access rules           |
+| `domainOwner` | Optional metadata (not used by the engine) |
+
+```
+
 ## Blueprint JSON Example
 
  {
