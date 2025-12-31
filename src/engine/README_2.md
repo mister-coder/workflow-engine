@@ -112,6 +112,18 @@ A transition defines a valid movement from one step to another.
 }
 ```
 
+## Transition Fields
+
+```
+| Field         | Description                                  |
+| ------------- | -------------------------------------------- |
+| `fromStepKey` | Source step                                  |
+| `toStepKey`   | Target step                                  |
+| `action`      | Action name triggering the transition        |
+| `status`      | Optional status applied after transition     |
+| `permissions` | Optional roles allowed to perform the action |
+```
+
 
 ## Blueprint JSON Example
 
