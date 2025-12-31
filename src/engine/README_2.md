@@ -612,6 +612,9 @@ export class ExpenseRequest extends BaseEntity {
 
   @OneToMany(() => ExpenseChild, child => child.expenseRequest)
   children: ExpenseChild[];
+
+  @OneToMany(() => ExpenseHistory, history => history.request)
+  history: ExpenseHistory[];
 }
 ```
 
@@ -669,6 +672,9 @@ export class ExpenseHistory extends BaseEntity {
   @PrimaryGeneratedColumn("uuid")
   id: string;
 
+  @ManyToOne(() => ExpenseRequest, request => request.history)
+  expenseRequest: ExpenseRequest;
+
   @Column()
   workflowId: string;
   
@@ -700,7 +706,6 @@ Extend **GenericWorkflowService<YourWorkflowEntity>**.
 - Snapshot
 - Children (with snapshots)
 
-2. Override methods if needed (create, update, performAction).
 ```
 export class ExpenseRequestService extends GenericWorkflowService<ExpenseRequest> {
   constructor() {
@@ -733,57 +738,24 @@ Define workflow metadata, steps, actions, permissions, and child configurations.
 
 ```
 {
-  "key": "expense",
-  "name": "Expense Request",
-  "entity": "ExpenseRequest",
-  "historyEntity": "ExpenseHistory",
-  "snapshotEntity": "ExpenseSnapshot",
-  "children": [
-    {
-      "entity": "ExpenseChild",
-      "snapshotEntity": "ExpenseChildSnapshot",
-      "relation": "children",
-      "write": true,
-      "children": []
-    }
-  ],
-  "steps": [
-    {
-      "key": "draft",
-      "name": "Draft",
-      "actions": ["submit", "cancel"],
-      "permissions": {
-        "owner": ["submit", "cancel"],
-        "manager": []
-      }
-    },
-    {
-      "key": "manager_approval",
-      "name": "Manager Approval",
-      "actions": ["approve", "reject"],
-      "permissions": {
-        "manager": ["approve", "reject"],
-        "owner": []
-      }
-    },
-    {
-      "key": "finance_approval",
-      "name": "Finance Approval",
-      "actions": ["approve", "reject"],
-      "permissions": {
-        "finance": ["approve", "reject"],
-        "owner": []
-      }
-    },
-    {
-      "key": "completed",
-      "name": "Completed",
-      "actions": [],
-      "permissions": {}
-    }
-  ],
-  "defaultStep": "draft"
-}
+    "workflowKey": "leave",
+    "steps": [
+      { "key": "DRAFT", "name": "Draft","permissions": { "view": ["Employee", "Manager"], "create": ["Employee"], "update": ["Employee"] }, "domainOwner": ["Employee"] },
+      { "key": "MANAGER_REVIEW", "name": "Manager Review" },
+      { "key": "HR_REVIEW", "name": "HR Review" },
+      { "key": "COMPLETED", "name": "Completed" },
+      { "key": "REJECTED", "name": "Rejected" }
+    ],
+    "transitions": [
+      { "fromStepKey": "DRAFT", "toStepKey": "MANAGER_REVIEW", "action": "submit", "status": "submitted" },
+      { "fromStepKey": "MANAGER_REVIEW", "toStepKey": "HR_REVIEW", "action": "approve" },
+      { "fromStepKey": "HR_REVIEW", "toStepKey": "COMPLETED", "action": "approve", "status": "approved by HR", "permissions": ["Employee", "Manager", "HR"] },
+      { "fromStepKey": "HR_REVIEW", "toStepKey": "CANCELED", "action": "cancel", "status": "canceled by HR", "permissions": ["Employee", "Manager", "HR"] },
+      { "fromStepKey": "MANAGER_REVIEW", "toStepKey": "REJECTED", "action": "reject", "status": "rejected by HR" },
+      { "fromStepKey": "HR_REVIEW", "toStepKey": "REJECTED", "action": "reject" }
+    ]
+  }
+  
 ```
 
 ### Expose CRUD & Workflow APIs
