@@ -54,6 +54,25 @@ Blueprints live outside application code and are loaded at runtime by the Workfl
 /workflows/{workflowKey}.workflow.json
 ```
 
+### Top-Level Structure
+
+```
+{
+  "workflowKey": "leave",
+  "steps": [],
+  "transitions": []
+}
+
+```
+
+The blueprint is composed of:
+
+1. A unique workflow identifier
+
+2. A list of steps (states)
+
+3. A list of transitions between steps
+
 ## Blueprint JSON Example
 
  {
