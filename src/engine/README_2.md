@@ -588,6 +588,7 @@ Retrieves records where field === value.
 - nin — not in array
 - lt, $lte, $gt, $gte — comparison operators
 - like — partial string match
+- between — between
 
 3. Nested filters: Filters can target child entities or snapshots by specifying the relation.
 
@@ -595,7 +596,7 @@ Example for getMany:
 
 ```
 workflowService.getMany({
-  filter: {
+  {
     status: "draft",
     ownerId: "user-123",
     children: {
@@ -610,7 +611,64 @@ workflowService.getMany({
 Grouping allows aggregation over one or more fields.
 - groupBy parameter specifies fields to group results by.
 - Works in combination with filters.
+
 Example for aggregate:
+```
+workflowService.aggregate(
+  { status: "completed" },
+  {
+    groupBy: ["currentStepKey"],
+    aggregates: [
+      { fn: "COUNT", alias: "count" }
+    ]
+  }
+);
+```
+aggregates defines aggregation functions:
+1. count — count of records
+2. sum — total of numeric field
+3. avg — average
+4. min — minimum
+5. max — maximum
+
+### getOne Usage
+
+getOne can use filters to retrieve a single workflow record matching specific criteria.
+
+Typically combined with includeAvailableActions and enforceViewPermission options.
+
+Example:
+```
+workflowService.getOne(
+  { id: "workflow-456", status: "draft" },
+  {
+  userRole: "owner",
+  includeAvailableActions: true
+  }
+);
+```
+
+If multiple records match, only the first one is returned.
+
+### getMany Usage
+
+Retrieve multiple workflow records with optional filter.
+
+### aggregate Usage
+1. Performs grouped aggregations and calculations over filtered datasets.
+2. Returns aggregated results instead of full records.
+
+workflowService.aggregate(
+  { status: "completed" },
+  {
+    groupBy: ["currentStepKey"],
+    aggregates: [
+      { fn: "COUNT", alias: "count" }
+    ]
+  }
+);
+
+
 
 
 
