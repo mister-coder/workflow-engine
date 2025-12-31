@@ -1,3 +1,25 @@
+/**
+ * WARNING
+ *
+ * This file is part of the core workflow engine.
+ *
+ * Do NOT modify this code unless you fully understand:
+ * - workflow lifecycle
+ * - snapshot & versioning semantics
+ * - child entity persistence rules
+ *
+ * Changes here may silently break:
+ * - data integrity
+ * - historical snapshots
+ * - permission enforcement
+ *
+ * When in doubt, extend or override behavior instead of editing this file.
+ * The codebase is the source of truth.
+ * 
+ * See README.md → "Workflow Engine – Internal Guarantees"
+ * before making any changes to this file.
+ */
+
 import * as fs from "fs";
 import * as path from "path";
 

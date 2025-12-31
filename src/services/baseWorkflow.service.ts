@@ -1,3 +1,26 @@
+/**
+ * WARNING
+ *
+ * This file is part of the core workflow engine.
+ *
+ * Do NOT modify this code unless you fully understand:
+ * - workflow lifecycle
+ * - snapshot & versioning semantics
+ * - child entity persistence rules
+ *
+ * Changes here may silently break:
+ * - data integrity
+ * - historical snapshots
+ * - permission enforcement
+ *
+ * When in doubt, extend or override behavior instead of editing this file.
+ * The codebase is the source of truth.
+ * 
+ * See README.md → "Workflow Engine – Internal Guarantees"
+ * before making any changes to this file.
+ */
+
+
 import { Repository, SelectQueryBuilder } from "typeorm";
 import { WorkflowEngine } from "../engine/workflow.engine";
 import { User } from "../entities/User";
@@ -119,6 +142,13 @@ export class GenericWorkflowService<T extends { id: number; currentStepKey: stri
     });
   }
 
+
+  // ─────────────────────────────────────────────────────────────
+  // CRITICAL WORKFLOW ENGINE LOGIC
+  // Do not change unless you understand snapshot immutability,
+  // versioning rules, and backward compatibility requirements.
+  // ─────────────────────────────────────────────────────────────
+
   /**
    * Create a snapshot of the workflow state
    */
@@ -159,6 +189,14 @@ export class GenericWorkflowService<T extends { id: number; currentStepKey: stri
 
     return result;
   }
+  
+
+  // ─────────────────────────────────────────────────────────────
+  // CRITICAL WORKFLOW ENGINE LOGIC
+  // Do not change unless you understand snapshot immutability,
+  // versioning rules, and backward compatibility requirements.
+  // ─────────────────────────────────────────────────────────────
+
   
   /**
    * Save child table records
@@ -209,6 +247,14 @@ export class GenericWorkflowService<T extends { id: number; currentStepKey: stri
     }
   }
   
+  
+
+  // ─────────────────────────────────────────────────────────────
+  // CRITICAL WORKFLOW ENGINE LOGIC
+  // Do not change unless you understand snapshot immutability,
+  // versioning rules, and backward compatibility requirements.
+  // ─────────────────────────────────────────────────────────────
+
   /**
    * Update child table records
    */
@@ -271,6 +317,14 @@ export class GenericWorkflowService<T extends { id: number; currentStepKey: stri
       }
     }
   }
+
+  
+
+  // ─────────────────────────────────────────────────────────────
+  // CRITICAL WORKFLOW ENGINE LOGIC
+  // Do not change unless you understand snapshot immutability,
+  // versioning rules, and backward compatibility requirements.
+  // ─────────────────────────────────────────────────────────────
 
   /**
    * Perform an action on a workflow entity
