@@ -598,8 +598,14 @@ export class ExpenseRequest extends BaseEntity {
   @PrimaryGeneratedColumn("uuid")
   id: string;
 
+  @ManyToOne(() => User)
+  createdBy: User;
+
   @Column()
-  status: string;
+  currentStepKey: string;  
+
+  @Column()
+  status: string;   
 
   @ManyToOne(() => User)
   owner: User;
@@ -630,7 +636,7 @@ export class ExpenseChild extends BaseEntity {
 ```
 
 ### Snapshot Entities
-Snapshots are immutable, used for audit/logging.
+Snapshots are a copy of the main entity and are immutable, used for audit/logging.
 - One snapshot entity per workflow or child entity.
 
 ```
@@ -638,6 +644,12 @@ Snapshots are immutable, used for audit/logging.
 export class ExpenseSnapshot extends BaseEntity {
   @PrimaryGeneratedColumn("uuid")
   id: string;
+
+  @ManyToOne(() => User)
+  createdBy: User;
+
+  @Column()
+  currentStepKey: string;  
 
   @Column()
   status: string;
@@ -659,9 +671,15 @@ export class ExpenseHistory extends BaseEntity {
 
   @Column()
   workflowId: string;
+  
+  @Column()
+  fromStepKey: string;
 
   @Column()
-  userId: string;
+  toStepKey: string;
+
+  @ManyToOne(() => User)
+  performedBy: User;
 
   @Column()
   action: string;
