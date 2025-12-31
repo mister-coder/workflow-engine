@@ -317,10 +317,42 @@ Behavior:
 4. Creates an immutable snapshot of the initial state
 5. Saves configured child entities
 
+### Performing Actions
 
+Actions move a request from one step to another.
 
+```
+performAction(id, action, performedById)
+```
 
+For each action:
+1. The current step is resolved
+2. The transition is validated via the workflow engine
+3. History is recorded
+4. The entity’s step and status are updated atomically
 
+Bulk actions are supported by passing an array of IDs.
+
+### History Tracking
+
+Every successful transition creates a history record capturing:
+1. Source step
+2. Target step
+3. Action
+4. User
+
+This provides a complete audit trail of workflow progression.
+
+### Updates & Snapshots
+
+Updating a workflow entity:
+
+1. Merges changes without cascading child updates
+2. Persists the new state
+3. Creates a snapshot capturing the full entity state
+4. Updates child entities explicitly if configured
+
+Snapshots are immutable and version-safe.
 
 
 
