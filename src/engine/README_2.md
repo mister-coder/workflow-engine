@@ -2,6 +2,8 @@
 <sub>Authored by Muhammad (muhammad) Ragialla 31/12/2025</sub>
 <br>
 <br>
+> **Note**
+> Documentation may be out of date. Always refer to the source code for the most accurate and up-to-date behavior.
 <br>
 A lightweight, class-based declarative state machine engine for building customizable, multi-user approval workflows.
 All workflow behavior is defined externally using JSON blueprints, making workflows portable, editable, and independent of application code.
