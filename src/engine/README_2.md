@@ -18,14 +18,12 @@ Rather than hard-coding workflow logic, each workflow is described using a JSON 
 The engine interprets this declaration at runtime and enforces it consistently.
 
 
-## Understanding the State Machine
+## State Machine Model
 ### Basic Terms:
-Concept	Description
+A workflow consists of steps (states) and transitions (actions).
+For any given state and action, the next state is deterministic. If no transition is defined, the action is rejected.
 
-- States = steps (e.g., DRAFT, MANAGER_REVIEW)
-- Transitions = actions (e.g., submit, approve, reject)
-- Deterministic: each state/action combo leads to a unique next state
-- Validation: only defined transitions are allowed
+This guarantees that requests cannot skip steps or move to undefined states.
 
 ### Example:
 This example from leave.json blueprint defines a state machine like this:
