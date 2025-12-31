@@ -833,6 +833,88 @@ In this case:
 1. ChildSnapshot.child stores the ID of the original Child record.
 2. Ensures immutable versioning: each snapshot is linked to the entity it represents, independent of the parent workflow.
 
+### children in the configuration
+
+The children property defines nested entities under a parent record.
+
+It can contain:
+1. The repository for the child entity
+2. Its snapshot repository
+3. Whether it should be written (write)
+4. Its own foreignKey
+5. A relation name matching the entity’s OneToMany property
+6. Optional nested children, recursively
+
+Example:
+```
+{
+  repo: AppDataSource.getRepository(Child),
+  snapshotRepo: AppDataSource.getRepository(ChildSnapshot),
+  write: false,
+  foreignKey: "child",
+  relation: "children",
+  children: [
+    {
+      repo: AppDataSource.getRepository(SubChild),
+      snapshotRepo: AppDataSource.getRepository(SubChildSnapshot),
+      write: false,
+      foreignKey: "subChild",
+      relation: "subChild",
+    }
+  ]
+}
+```
+- Child is a child of LeaveRequest.
+
+- SubChild is a nested child of Child.
+
+During creation:
+
+1. The parent (LeaveRequest) is saved.
+2. Child entities are extracted and saved with the foreign key pointing to the parent.
+3. SubChild entities are extracted from each Child and saved with the foreign key pointing to their Child.
+
+Snapshots are created in the same hierarchy.
+
+### How foreignKey and relation interact
+
+relation maps to the entity’s OneToMany property:
+
+```
+@OneToMany(() => Child, child => child.request)
+children: Child[];
+```
+
+foreignKey maps to the snapshot entity property linking back to the child:
+
+```
+ChildSnapshot.child // <- foreignKey
+```
+
+During create or update:
+1. Data for the children is extracted from the main payload (extractChildren).
+2. Only children with write: true are persisted.
+3. Snapshots are created using the foreignKey to point back to the original record.
+
+### Nested Children
+Nested children follow the same pattern recursively:
+1. Each level has its own foreignKey.
+2. Each snapshot links to the entity at its own level, not directly to the top-level workflow.
+
+Example hierarchy:
+
+```
+LeaveRequest
+ ├─ Child (foreignKey: parent LeaveRequest id in snapshot)
+ │   └─ SubChild (foreignKey: parent Child id in snapshot)
+ └─ SecondChild (foreignKey: parent LeaveRequest id in snapshot)
+```
+
+This allows the engine to:
+1. Track versioned child entities
+2. Maintain immutable snapshots at all levels
+3. Preserve hierarchical relations without overwriting parent data
+
 
 ### Create the Workflow Service
 
