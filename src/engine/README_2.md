@@ -62,7 +62,6 @@ Blueprints live outside application code and are loaded at runtime by the Workfl
   "steps": [],
   "transitions": []
 }
-
 ```
 
 The blueprint is composed of:
@@ -87,7 +86,6 @@ A step represents a state in the workflow lifecycle.
   },
   "domainOwner": ["Employee"]
 }
-
 ```
 
 ## Step Fields
@@ -101,6 +99,19 @@ A step represents a state in the workflow lifecycle.
 | `domainOwner` | Optional metadata (not used by the engine) |
 
 ```
+
+## Transitions
+A transition defines a valid movement from one step to another.
+```
+{
+  "fromStepKey": "DRAFT",
+  "toStepKey": "MANAGER_REVIEW",
+  "action": "submit",
+  "status": "submitted",
+  "permissions": ["Employee"]
+}
+```
+
 
 ## Blueprint JSON Example
 
