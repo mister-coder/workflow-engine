@@ -764,6 +764,20 @@ Define workflow metadata, steps, actions, permissions, and child configurations.
 }
 ```
 
+### Expose CRUD & Workflow APIs
+```
+| API                | Method | Endpoint                   | Service Method |
+| ------------------ | ------ | -------------------------- | -------------- |
+| Create workflow    | POST   | /api/<workflow>            | create         |
+| Update workflow    | PATCH  | /api/<workflow>/:id        | update         |
+| Get one workflow   | GET    | /api/<workflow>/:id        | getOne         |
+| Get many workflows | GET    | /api/<workflow>            | getMany        |
+| Perform action     | POST   | /api/<workflow>/:id/action | performAction  |
+| Aggregate          | POST   | /api/<workflow>/aggregate  | aggregate      |
+```
+
+
+
 
 
 
