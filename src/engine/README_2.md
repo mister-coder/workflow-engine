@@ -383,6 +383,57 @@ Read-only status is computed at query time based on:
 2. Step-level update permissions
 3. User role
 
+```
+isReadOnly = !step.permissions.update.includes(role)
+```
+
+This allows the UI to reflect editability without duplicating logic.
+
+### Aggregation
+The method supports analytics-style aggregation queries:
+
+```
+aggregate(filter, {
+  groupBy: ["currentStepKey"],
+  aggregates: [{ fn: "COUNT", alias: "count" }]
+})
+```
+
+Aggregation logic is isolated and should not be used for transactional operations.
+
+## Child Entities & Snapshot System
+
+The workflow engine supports nested child entities and immutable snapshots to ensure data consistency, auditability, and safe evolution over time.
+
+Child persistence and snapshot creation are explicitly controlled by the workflow service and never inferred automatically.
+
+### Child Entities
+
+Child entities represent structured data owned by a workflow record (e.g. line items, attachments, approvals).
+
+They are:
+1. Loaded explicitly
+2. Persisted transactionally
+3. Versioned through snapshots
+4. Detached from workflow state transitions
+
+Child entities do not influence workflow state unless referenced by business logic outside the engine.
+
+
+### Child Configuration
+
+Each workflow defines which children are managed:
+
+```
+protected children = [
+  {
+    property: "items",
+    entity: LeaveItem,
+    cascade: false
+  }
+];
+```
+
 
 
 
