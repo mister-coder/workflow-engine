@@ -347,12 +347,43 @@ This provides a complete audit trail of workflow progression.
 
 Updating a workflow entity:
 
-1. Merges changes without cascading child updates
+1. Merges changes cascading child updates depending on the **write** option passed
 2. Persists the new state
 3. Creates a snapshot capturing the full entity state
 4. Updates child entities explicitly if configured
 
 Snapshots are immutable and version-safe.
+
+### Querying Records
+getOne
+
+```
+getOne(filter, options)
+```
+Supports:
+
+1. Joining active children
+2. Enforcing step-based view permissions
+3. Resolving available actions for a role
+4. Resolving read-only state dynamically
+
+### getMany
+```
+getMany(filter, options)
+```
+Supports:
+1. Recursive child joins
+2. Advanced filtering (operators, ranges, nesting)
+3. Role-based visibility enforcement
+
+### Read-Only Resolution
+
+Read-only status is computed at query time based on:
+1. Current step
+2. Step-level update permissions
+3. User role
+
+
 
 
 
