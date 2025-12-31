@@ -73,6 +73,23 @@ The blueprint is composed of:
 
 3. A list of transitions between steps
 
+## Steps
+A step represents a state in the workflow lifecycle.
+
+```
+{
+  "key": "DRAFT",
+  "name": "Draft",
+  "permissions": {
+    "view": ["Employee", "Manager"],
+    "create": ["Employee"],
+    "update": ["Employee"]
+  },
+  "domainOwner": ["Employee"]
+}
+
+```
+
 ## Blueprint JSON Example
 
  {
