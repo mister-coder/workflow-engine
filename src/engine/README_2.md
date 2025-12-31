@@ -172,6 +172,10 @@ create(data, userId, { startStepKey: "HR_REVIEW" })
 }
 ```
 
+## Design Notes
+1. Blueprints are purely declarative
+2. JSON encodes the Business Logic
+4. Multiple workflows can coexist independently
 
 ## Blueprint JSON Example
 
