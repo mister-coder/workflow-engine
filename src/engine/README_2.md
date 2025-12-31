@@ -569,7 +569,145 @@ const entities = await workflowService.getMany({}, {
 4. Service-enforced, not engine-enforced: The WorkflowEngine exposes permission data; the GenericWorkflowService enforces it against database operations.
 
 
+## Adding a New Workflow
 
+This guide describes all steps to add a new workflow type to the engine, including entities, snapshots, history, service, API, permissions, and JSON workflow metadata.
+
+1. Define the Database Entities
+### Main Workflow Entity
+
+Create a new entity (e.g., ExpenseRequest) in /entities/<workflow>/.
+
+Standard fields:
+- id (primary key)
+- status (workflow status)
+- createdAt / updatedAt
+- Workflow-specific fields
+
+Relations:
+- owner → User
+- children → child entities
+
+```
+@Entity()
+export class ExpenseRequest extends BaseEntity {
+  @PrimaryGeneratedColumn("uuid")
+  id: string;
+
+  @Column()
+  status: string;
+
+  @ManyToOne(() => User)
+  owner: User;
+
+  @OneToMany(() => ExpenseChild, child => child.expenseRequest)
+  children: ExpenseChild[];
+}
+```
+
+### Child Entities
+Child entities store structured sub-data.
+- Include a foreign key to the parent workflow entity.
+- Nested sub-children follow the same pattern.
+
+
+```
+@Entity()
+export class ExpenseChild extends BaseEntity {
+  @PrimaryGeneratedColumn("uuid")
+  id: string;
+
+  @ManyToOne(() => ExpenseRequest, request => request.children)
+  expenseRequest: ExpenseRequest;
+
+  @Column()
+  description: string;
+}
+```
+
+### Snapshot Entities
+Snapshots are immutable, used for audit/logging.
+- One snapshot entity per workflow or child entity.
+
+```
+@Entity()
+export class ExpenseSnapshot extends BaseEntity {
+  @PrimaryGeneratedColumn("uuid")
+  id: string;
+
+  @Column()
+  status: string;
+
+  @Column()
+  parentId: string; // original record ID
+}
+```
+
+### History Entity
+Tracks all workflow actions and transitions.
+- Includes: workflowId, userId, action, payload (optional), timestamp.
+
+```
+@Entity()
+export class ExpenseHistory extends BaseEntity {
+  @PrimaryGeneratedColumn("uuid")
+  id: string;
+
+  @Column()
+  workflowId: string;
+
+  @Column()
+  userId: string;
+
+  @Column()
+  action: string;
+
+  @CreateDateColumn()
+  timestamp: Date;
+}
+```
+
+### Create the Workflow Service
+
+Extend **GenericWorkflowService<YourWorkflowEntity>**.
+
+1. Pass repositories for:
+- Main entity
+- User
+- History
+- Snapshot
+- Children (with snapshots)
+
+2. Override methods if needed (create, update, performAction).
+```
+export class ExpenseRequestService extends GenericWorkflowService<ExpenseRequest> {
+  constructor() {
+    super(
+      "expense",
+      AppDataSource.getRepository(ExpenseRequest),
+      AppDataSource.getRepository(User),
+      AppDataSource.getRepository(ExpenseHistory),
+      AppDataSource.getRepository(ExpenseSnapshot),
+      "request",
+      [
+        {
+          repo: AppDataSource.getRepository(ExpenseChild),
+          snapshotRepo: AppDataSource.getRepository(ExpenseChildSnapshot),
+          write: true,
+          foreignKey: "expenseItem",
+          relation: "children",
+        }
+      ]
+    );
+  }
+}
+```
+
+### Workflow JSON Schema
+
+Define workflow metadata, steps, actions, permissions, and child configurations.
+1. Stored in **/workflows/<workflow>.json**
+2. Drives UI, API validation, and workflow engine logic
 
 
 
