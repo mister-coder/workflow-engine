@@ -172,10 +172,6 @@ create(data, userId, { startStepKey: "HR_REVIEW" })
 }
 ```
 
-## Design Notes
-1. Blueprints are purely declarative
-2. JSON encodes the Business Logic
-4. Multiple workflows can coexist independently
 
 ## Workflow Engine
 
@@ -241,14 +237,32 @@ engine.getAvailableTransitions("CHAMP_REVIEW");
 
 Or filter actions by role:
 ```
-engine.getAvailableActionsForUser("HEAD_REVIEW", "Employee");
+engine.getAvailableActionsForUser("HEAD_REVIEW", "champion");
 ```
 
 Transition-level permissions are enforced declaratively based on the blueprint.
 
 
+### Permissions & Visibility
+Step-level permissions control:
+1. Which steps are viewable for a role
+2. Whether a step is editable or read-only
 
+```
+engine.getViewableStepsForRole("champion");
+```
 
+The engine does not enforce persistence rules but exposes permission data for higher layers to apply.
+
+### Initial Step Resolution
+
+The initial step defaults to the first step defined in the blueprint:
+
+```
+engine.getInitialStepKey();
+```
+
+This behavior can be overridden by the service layer during creation.
 
 
 
