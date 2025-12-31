@@ -401,38 +401,49 @@ aggregate(filter, {
 
 Aggregation logic is isolated and should not be used for transactional operations.
 
-## Child Entities & Snapshot System
+## Child & Snapshot System
 
-The workflow engine supports nested child entities and immutable snapshots to ensure data consistency, auditability, and safe evolution over time.
+The engine includes a robust mechanism for handling nested child entities and immutable snapshots, ensuring full auditability and safe data evolution over time.
 
-Child persistence and snapshot creation are explicitly controlled by the workflow service and never inferred automatically.
+Purpose
+1. Maintain historical accuracy of workflow records.
+2. Enable rollback and reconstruction of any workflow state.
+3. Support nested relationships without losing consistency.
+4. Allow selective write control for child tables.
 
-### Child Entities
+Child Entities
 
-Child entities represent structured data owned by a workflow record (e.g. line items, attachments, approvals).
+Child entities are dependent data tables linked to a parent workflow record. They represent subcomponents of a request, such as:
+1. Line items in a request
+2. Attachments or sub-tasks in a request
 
-They are:
-1. Loaded explicitly
-2. Persisted transactionally
-3. Versioned through snapshots
-4. Detached from workflow state transitions
-
-Child entities do not influence workflow state unless referenced by business logic outside the engine.
-
-
-### Child Configuration
-
-Each workflow defines which children are managed:
+Child entities are defined via ChildConfig:
 
 ```
-protected children = [
-  {
-    property: "items",
-    entity: LeaveItem,
-    cascade: false
-  }
-];
+interface ChildConfig {
+  repo: Repository<any>;           // TypeORM repository for child table
+  snapshotRepo?: Repository<any>;  // Optional repository for snapshot storage
+  foreignKey: string;              // Name of the key linking to the parent
+  relation: string;                // Relation name for querying
+  children?: ChildConfig[];        // Nested child configs for recursion
+  write?: boolean;                 // Indicates if children can be modified
+}
 ```
+
+#### Key Features
+
+1. Nested Children
+- Supports recursive configurations, allowing multiple levels of nested data.
+- Example: children → subChild → subSubChild.
+
+2. Write Control
+- write: false ensures child data is read-only and not updated during service operations.
+- write: true allows creation and updates, with snapshots captured for each change.
+
+3. Relation Handling
+- relation matches the property name on the entity.
+- Used in leftJoinAndSelect queries to include children in GET operations.
+
 
 
 
