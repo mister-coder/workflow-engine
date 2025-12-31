@@ -19,7 +19,6 @@ The engine interprets this declaration at runtime and enforces it consistently.
 
 
 ## State Machine Model
-### Basic Terms:
 A workflow consists of steps (states) and transitions (actions).
 For any given state and action, the next state is deterministic. If no transition is defined, the action is rejected.
 
